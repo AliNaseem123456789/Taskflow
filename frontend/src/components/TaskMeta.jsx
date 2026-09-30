@@ -9,6 +9,13 @@ export default function TaskMeta({ task, showBlocker = true }) {
   const isRecurring = task.recurrence || task.recurrence_parent_id;
 
   const chips = [];
+  if (task.project)
+    chips.push(
+      <span key="proj" className="flex items-center gap-1 text-[10px] text-gray-600" title="Team project">
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: task.project.color }} />
+        {task.project.name}
+      </span>
+    );
   if (task.priority && task.priority !== "medium")
     chips.push(
       <span key="p" className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${priority.badge}`}>

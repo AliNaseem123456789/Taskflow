@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { sendTo } from "../utils/events.js";
 
 // Create in-app notifications. Never throws; never notifies the actor.
 // items: [{ user_id, type, message, task_id?, link? }]
@@ -8,7 +9,8 @@ export const notify = async (actorId, items) => {
     .map((n) => ({ ...n, actor_id: actorId }));
   if (!rows.length) return;
   const { error } = await supabase.from("notifications").insert(rows);
-  if (error) console.error("notify failed:", error.message);
+  if (error) return console.error("notify failed:", error.message);
+  sendTo(rows.map((r) => r.user_id), "notification", {});
 };
 
 // GET /notifications  -> { unread, items: [...latest 30] }

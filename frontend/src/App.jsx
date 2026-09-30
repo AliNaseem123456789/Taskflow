@@ -31,6 +31,7 @@ import TeamManage  from "./pages/TeamManage";
 import BoardPage   from "./pages/BoardPage";
 import GoalsPage   from "./pages/GoalsPage";
 import TaskDetail  from "./pages/TaskDetail";
+import JoinTeam    from "./pages/JoinTeam";
 
 // Logged-in pages
 const appRoutes = [
@@ -46,6 +47,7 @@ const appRoutes = [
   ["/board",           <BoardPage />],
   ["/goals",           <GoalsPage />],
   ["/tasks/:id",       <TaskDetail />],
+  ["/join",            <JoinTeam />],
 ];
 
 // Send logged-in users away from login/signup

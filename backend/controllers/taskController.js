@@ -1,15 +1,24 @@
 import { supabase } from "../config/supabase.js";
 import { todayIn, dayNumber, monthRange, addDays } from "../utils/time.js";
 import { canAccessTask } from "./commentController.js";
+import { publishToTeammates } from "../utils/events.js";
+import { canUseProject } from "./projectController.js";
+
+// tell the owner's teammates (and the owner's other tabs) something changed
+const announce = (userId, action, taskId) =>
+  publishToTeammates(userId, "task", { action, id: taskId });
 
 // Full select with tags + reactions
-const TASK_SELECT = "*, task_tags(tags(id, name, color)), task_reactions(user_id, emoji)";
+const TASK_SELECT =
+  "*, projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)";
 
 export const normaliseTasks = (data) =>
   data.map((t) => ({
     ...t,
     tags: t.task_tags?.map((tt) => tt.tags).filter(Boolean) || [],
     reactions: t.task_reactions || [],
+    project: t.projects || null,
+    projects: undefined,
     task_tags: undefined,
     task_reactions: undefined,
   }));
@@ -54,6 +63,7 @@ const readTaskFields = (body, { requireTitle = false } = {}) => {
     if (!isDate(body.date_logged)) return { error: "Invalid date" };
     fields.date_logged = body.date_logged;
   }
+  if (body.project_id !== undefined) fields.project_id = body.project_id || null;
   if (body.blocker !== undefined) {
     const b = String(body.blocker || "").trim();
     fields.blocker = b || null;
@@ -222,6 +232,8 @@ export const getHeatmap = async (req, res) => {
 export const addTask = async (req, res) => {
   const { fields, error: invalid } = readTaskFields(req.body, { requireTitle: true });
   if (invalid) return res.status(400).json({ error: invalid });
+  if (fields.project_id && !(await canUseProject(req.user.id, fields.project_id)))
+    return res.status(400).json({ error: "You're not in that project's team" });
 
   try {
     const { data, error } = await supabase
@@ -245,6 +257,7 @@ export const addTask = async (req, res) => {
     }
 
     res.status(201).json(await loadTask(data.id));
+    announce(req.user.id, "created", data.id);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -255,6 +268,8 @@ export const addTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   const { fields, error: invalid } = readTaskFields(req.body);
   if (invalid) return res.status(400).json({ error: invalid });
+  if (fields.project_id && !(await canUseProject(req.user.id, fields.project_id)))
+    return res.status(400).json({ error: "You're not in that project's team" });
 
   try {
     const { data, error } = await supabase
@@ -278,6 +293,7 @@ export const updateTask = async (req, res) => {
     }
 
     res.json(await loadTask(data.id));
+    announce(req.user.id, "updated", data.id);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -302,6 +318,7 @@ export const reorderTasks = async (req, res) => {
       )
     );
     res.json({ success: true });
+    announce(req.user.id, "updated", null);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -318,6 +335,7 @@ export const deleteTask = async (req, res) => {
       .eq("user_id", req.user.id);
     if (error) throw error;
     res.json({ success: true });
+    announce(req.user.id, "deleted", Number(req.params.id));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -378,6 +396,7 @@ export const runRecurringJob = async () => {
     const tagIds = (t.task_tags || []).map((tt) => tt.tag_id);
     if (tagIds.length)
       await supabase.from("task_tags").insert(tagIds.map((tag_id) => ({ task_id: copy.id, tag_id })));
+    announce(t.user_id, "created", copy.id);
     created++;
   }
   if (created) console.log(`[Cron] recurring: created ${created} task(s)`);

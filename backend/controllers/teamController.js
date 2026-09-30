@@ -1,11 +1,14 @@
 import crypto from "node:crypto";
 import { supabase } from "../config/supabase.js";
-import { sendEmail } from "./emailController.js";
-import { todayIn, monthIn, monthRange } from "../utils/time.js";
+import { sendEmail, appLink } from "./emailController.js";
+import { notify } from "./notificationController.js";
+import { todayIn, monthIn, monthRange, clockIn, parseClock, safeTz } from "../utils/time.js";
+import { hashToken } from "../utils/session.js";
+import { publishToTeam } from "../utils/events.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function getMembership(teamId, userId) {
+export async function getMembership(teamId, userId) {
   const { data } = await supabase
     .from("team_members")
     .select("role")
@@ -93,6 +96,7 @@ export const joinTeam = async (req, res) => {
     .insert([{ team_id: team.id, user_id: req.user.id, role: "member" }]);
 
   res.json({ success: true, team });
+  publishToTeam(team.id, "team", {});
 };
 
 export const leaveTeam = async (req, res) => {
@@ -179,7 +183,7 @@ export const getTeamFeed = async (req, res) => {
 
   let query = supabase
     .from("tasks")
-    .select("*, users(id, name, email), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
+    .select("*, users(id, name, email), projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
     .in("user_id", memberIds);
 
   if (date) {
@@ -198,6 +202,8 @@ export const getTeamFeed = async (req, res) => {
     ...t,
     tags: t.task_tags?.map((tt) => tt.tags).filter(Boolean) || [],
     reactions: t.task_reactions || [],
+    project: t.projects || null,
+    projects: undefined,
     task_tags: undefined,
     task_reactions: undefined,
   }));
@@ -257,45 +263,237 @@ export const getTeamStats = async (req, res) => {
 
 // ── Team digest email ─────────────────────────────────────────────────────────
 
+// Builds the digest text for one team and emails every member.
+// `date` is the day to report on (YYYY-MM-DD).
+const sendDigest = async (teamId, date) => {
+  const { data: team } = await supabase.from("teams").select("name").eq("id", teamId).single();
+  const { data: members } = await supabase
+    .from("team_members")
+    .select("user_id, users(email, name)")
+    .eq("team_id", teamId);
+  const memberIds = members.map((m) => m.user_id);
+
+  const [{ data: tasks }, { data: standups }] = await Promise.all([
+    supabase.from("tasks").select("user_id, title, status, blocker, projects(name)")
+      .in("user_id", memberIds).eq("date_logged", date),
+    supabase.from("standups").select("*").eq("team_id", teamId).eq("date", date),
+  ]);
+
+  const sections = members.map(({ user_id, users: user }) => {
+    const mine = tasks?.filter((t) => t.user_id === user_id) || [];
+    const standup = standups?.find((st) => st.user_id === user_id);
+    const lines = [`${user.name || user.email}:`];
+    if (mine.length)
+      mine.forEach((t) =>
+        lines.push(`  • [${t.status}] ${t.title}${t.projects ? ` (${t.projects.name})` : ""}${t.blocker ? ` — blocked: ${t.blocker}` : ""}`)
+      );
+    else lines.push("  (no entries)");
+    if (standup) {
+      if (standup.today) lines.push(`  Plan: ${standup.today.replace(/\n/g, "\n        ")}`);
+      if (standup.blockers) lines.push(`  Blockers: ${standup.blockers.replace(/\n/g, "\n            ")}`);
+    }
+    return lines.join("\n");
+  });
+
+  const body =
+    `Team digest for ${team.name} — ${date}\n\n${sections.join("\n\n")}\n\n` +
+    `Open the team page: ${appLink("/team")}\n\n— MyDones Team`;
+
+  for (const m of members) {
+    await sendEmail(m.users.email, `[${team.name}] Daily digest — ${date}`, body);
+  }
+};
+
+// POST /teams/:id/digest — admin sends it right now
 export const sendTeamDigest = async (req, res) => {
   const { id } = req.params;
-
   const membership = await getMembership(id, req.user.id);
   if (!membership || membership.role !== "admin")
     return res.status(403).json({ error: "Admin only" });
 
-  const { data: team } = await supabase.from("teams").select("name").eq("id", id).single();
-  const { data: members } = await supabase
-    .from("team_members")
-    .select("user_id, users(email, name)")
-    .eq("team_id", id);
-
-  const memberIds = members.map((m) => m.user_id);
-  const today = todayIn(req.user.timezone);
-
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("user_id, title, status")
-    .in("user_id", memberIds)
-    .eq("date_logged", today);
-
-  const memberMap = {};
-  members.forEach((m) => { memberMap[m.user_id] = m.users; });
-
-  const lines = memberIds.map((uid) => {
-    const user = memberMap[uid];
-    const userTasks = tasks?.filter((t) => t.user_id === uid) || [];
-    const taskLines = userTasks.length
-      ? userTasks.map((t) => `  • [${t.status}] ${t.title}`).join("\n")
-      : "  (no entries today)";
-    return `${user.name || user.email}:\n${taskLines}`;
-  });
-
-  const body = `Team digest for ${team.name} — ${today}\n\n${lines.join("\n\n")}\n\n— MyDones Team`;
-
-  for (const mem of members) {
-    await sendEmail(mem.users.email, `[${team.name}] Daily digest — ${today}`, body);
-  }
-
+  await sendDigest(id, todayIn(req.user.timezone));
   res.json({ success: true });
-};
+};
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// PUT /teams/:id/digest-settings — admin
+// { enabled, time: "06:00 PM", days: ["Mon",...], timezone? }
+export const updateDigestSettings = async (req, res) => {
+  const { id } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+  const { enabled, time, days, timezone } = req.body;
+  if (time !== undefined && !/^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/.test(time))
+    return res.status(400).json({ error: 'Time must look like "06:00 PM"' });
+  if (days !== undefined && (!Array.isArray(days) || days.some((d) => !WEEKDAYS.includes(d))))
+    return res.status(400).json({ error: "Days must be Sun..Sat" });
+
+  const updates = {};
+  if (enabled !== undefined) updates.digest_enabled = !!enabled;
+  if (time !== undefined) updates.digest_time = time;
+  if (days !== undefined) updates.digest_days = days;
+  updates.digest_timezone = safeTz(timezone || req.user.timezone);
+
+  const { data, error } = await supabase
+    .from("teams")
+    .update(updates)
+    .eq("id", id)
+    .select("digest_enabled, digest_time, digest_days, digest_timezone")
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+};
+
+// Cron (every minute): send scheduled digests. Claims digest_last_sent first
+// so each team gets one email per day even with several workers.
+export const runTeamDigestJob = async () => {
+  const { data: teams, error } = await supabase
+    .from("teams")
+    .select("id, digest_time, digest_days, digest_timezone, digest_last_sent")
+    .eq("digest_enabled", true);
+  if (error) return console.error("[Cron] digests:", error.message);
+
+  for (const team of teams) {
+    const now = clockIn(team.digest_timezone);
+    if (!team.digest_days?.includes(now.weekday)) continue;
+    const late = now.minutes - parseClock(team.digest_time);
+    if (late < 0 || late >= 5) continue;
+
+    const nowIso = new Date().toISOString();
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    let { data: claimed } = await supabase.from("teams").update({ digest_last_sent: nowIso })
+      .eq("id", team.id).is("digest_last_sent", null).select("id");
+    if (!claimed?.length)
+      ({ data: claimed } = await supabase.from("teams").update({ digest_last_sent: nowIso })
+        .eq("id", team.id).lt("digest_last_sent", cutoff).select("id"));
+    if (!claimed?.length) continue;
+
+    await sendDigest(team.id, todayIn(team.digest_timezone)).catch((e) =>
+      console.error(`[Cron] digest for team ${team.id}:`, e.message)
+    );
+  }
+};
+
+// ── Invite by email ───────────────────────────────────────────────────────────
+
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// POST /teams/:id/invites { email } — admin
+export const createInvite = async (req, res) => {
+  const { id } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+  const email = String(req.body.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: "Enter a valid email" });
+
+  const { data: team } = await supabase.from("teams").select("name").eq("id", id).single();
+  const { data: existingUser } = await supabase.from("users").select("id").ilike("email", email.replace(/[\\%_]/g, "\\$&")).maybeSingle();
+  if (existingUser && (await getMembership(id, existingUser.id)))
+    return res.status(400).json({ error: "That person is already in the team" });
+
+  const raw = crypto.randomBytes(24).toString("hex");
+  const { data: invite, error } = await supabase
+    .from("team_invites")
+    .insert([{
+      team_id: id,
+      email,
+      token_hash: hashToken(raw),
+      invited_by: req.user.id,
+      expires_at: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
+    }])
+    .select("id, email, expires_at, created_at")
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+
+  const link = appLink(`/join?token=${raw}`);
+  const { data: me } = await supabase.from("users").select("name, email").eq("id", req.user.id).single();
+  const inviter = me?.name || me?.email || "A teammate";
+  const sent = await sendEmail(
+    email,
+    `${inviter} invited you to ${team.name}`,
+    `Hi!\n\n${inviter} invited you to join the team "${team.name}" on MyDones.\n\nJoin here: ${link}\n\nThe link works for 7 days. If you don't have an account yet, sign up with this email first.\n\n– MyDones Team`
+  );
+  if (existingUser)
+    await notify(req.user.id, [{
+      user_id: existingUser.id, type: "invite", link: `/join?token=${raw}`,
+      message: `${inviter} invited you to join ${team.name}`,
+    }]);
+
+  res.status(201).json({ ...invite, email_sent: sent });
+};
+
+// GET /teams/:id/invites — admin: pending invites
+export const getInvites = async (req, res) => {
+  const { id } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+  const { data, error } = await supabase
+    .from("team_invites")
+    .select("id, email, expires_at, created_at")
+    .eq("team_id", id)
+    .is("accepted_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+};
+
+// DELETE /teams/:id/invites/:inviteId — admin
+export const revokeInvite = async (req, res) => {
+  const { id, inviteId } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+  await supabase.from("team_invites").delete().eq("id", inviteId).eq("team_id", id);
+  res.json({ success: true });
+};
+
+const findInvite = async (raw) => {
+  if (!raw) return null;
+  const { data } = await supabase
+    .from("team_invites")
+    .select("id, team_id, email, expires_at, accepted_at, teams(name), users!team_invites_invited_by_fkey(name, email)")
+    .eq("token_hash", hashToken(raw))
+    .maybeSingle();
+  return data;
+};
+
+// GET /teams/invites/lookup?token= — what the join page shows
+export const lookupInvite = async (req, res) => {
+  const invite = await findInvite(req.query.token);
+  if (!invite) return res.status(404).json({ error: "This invite link is not valid" });
+  const expired = new Date(invite.expires_at) < new Date();
+  res.json({
+    team_name: invite.teams?.name,
+    invited_by: invite.users?.name || invite.users?.email,
+    email: invite.email,
+    status: invite.accepted_at ? "accepted" : expired ? "expired" : "pending",
+  });
+};
+
+// POST /teams/invites/accept { token }
+export const acceptInvite = async (req, res) => {
+  const invite = await findInvite(req.body.token);
+  if (!invite) return res.status(404).json({ error: "This invite link is not valid" });
+  if (invite.accepted_at) return res.status(400).json({ error: "This invite was already used" });
+  if (new Date(invite.expires_at) < new Date()) return res.status(400).json({ error: "This invite has expired" });
+
+  const { data: me } = await supabase.from("users").select("email").eq("id", req.user.id).single();
+  if (me.email.toLowerCase() !== invite.email.toLowerCase())
+    return res.status(403).json({
+      error: `This invite is for ${invite.email}. Log in with that email to accept it.`,
+    });
+
+  if (!(await getMembership(invite.team_id, req.user.id))) {
+    const { error } = await supabase
+      .from("team_members")
+      .insert([{ team_id: invite.team_id, user_id: req.user.id, role: "member" }]);
+    if (error) return res.status(500).json({ error: error.message });
+  }
+  await supabase.from("team_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+  res.json({ success: true, team_id: invite.team_id, team_name: invite.teams?.name });
+  publishToTeam(invite.team_id, "team", {});
+};

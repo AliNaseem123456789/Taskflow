@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, AtSign, MessageCircle, Check } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { useLiveEvent } from "../utils/live";
 
 const POLL_MS = 60 * 1000;
 const ICON = { mention: AtSign, comment: MessageCircle };
@@ -25,6 +26,8 @@ export default function NotificationBell() {
     () => apiRequest("/notifications").then(setData).catch(() => {}),
     []
   );
+
+  useLiveEvent("notification", load, 200);
 
   useEffect(() => {
     load();

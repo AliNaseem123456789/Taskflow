@@ -43,6 +43,13 @@ export async function authenticate(req, res, next) {
   }
 }
 
+// For EventSource (/events), which can't send headers: token comes in ?token=
+export function authenticateStream(req, res, next) {
+  if (!req.headers.authorization && req.query.token)
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  return authenticate(req, res, next);
+}
+
 // Same as authenticate, but never blocks the request.
 // Used by /auth/logout so it can still work with an expired token.
 export async function optionalAuthenticate(req, res, next) {

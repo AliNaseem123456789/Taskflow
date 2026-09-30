@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import api, { saveLogin, browserTimezone } from "../api/api";
 export default function Signup() {
+  const location = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +23,7 @@ export default function Signup() {
         timezone: browserTimezone(),
       });
       saveLogin(res.data);
-      window.location.href = "/dashboard";
+      window.location.href = location.state?.from || "/dashboard";
     } catch (err) {
       setError(err.response?.data?.error || "Signup failed. Please try again.");
     } finally {
@@ -102,11 +103,11 @@ export default function Signup() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-gray-900 font-medium hover:underline">
+          <Link to="/login" state={location.state} className="text-gray-900 font-medium hover:underline">
             Sign in
           </Link>
         </p>
       </div>
     </div>
   );
-}
+}

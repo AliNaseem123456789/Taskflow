@@ -3,10 +3,11 @@ import { Plus, X, ChevronDown } from "lucide-react";
 import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
+import { useMyProjects } from "../utils/projects";
 
 const smallInput =
   "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
-const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "" };
+const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "" };
 
 export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [title, setTitle] = useState("");
@@ -16,6 +17,7 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [extra, setExtra] = useState(EMPTY_EXTRA);
+  const projects = useMyProjects();
   const setField = (key) => (e) => setExtra((x) => ({ ...x, [key]: e.target.value }));
 
 
@@ -118,6 +120,12 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
           <select className={smallInput} value={extra.recurrence} onChange={setField("recurrence")} title="Repeat">
             {RECURRENCES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
+          {projects.length > 0 && (
+            <select className={`${smallInput} col-span-2 sm:col-span-4`} value={extra.project_id} onChange={setField("project_id")} title="Team project">
+              <option value="">No project</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.team_name})</option>)}
+            </select>
+          )}
           <input
             className={`${smallInput} col-span-2 sm:col-span-4`}
             value={extra.blocker}

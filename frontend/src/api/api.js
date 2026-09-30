@@ -58,6 +58,7 @@ const clearLocalSession = () => {
 
 // Ends the session on the server too, then clears the browser.
 export const logout = async () => {
+  window.dispatchEvent(new Event("app:logout")); // closes the live connection
   try {
     await api.post("/auth/logout");
   } catch {

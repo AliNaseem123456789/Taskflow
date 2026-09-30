@@ -18,14 +18,16 @@ export const withProgress = async (goals, userIds, tz) => {
     const range = periodRange(g.period, tz);
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, task_tags(tag_id)")
+      .select("id, project_id, task_tags(tag_id)")
       .in("user_id", userIds)
       .eq("status", "Done")
       .gte("date_logged", range.start)
       .lte("date_logged", range.end);
-    const counted = g.tag_id
-      ? (tasks || []).filter((t) => t.task_tags?.some((tt) => tt.tag_id === g.tag_id))
-      : tasks || [];
+    const counted = (tasks || []).filter(
+      (t) =>
+        (!g.tag_id || t.task_tags?.some((tt) => tt.tag_id === g.tag_id)) &&
+        (!g.project_id || t.project_id === g.project_id)
+    );
     out.push({ ...g, progress: counted.length, ...range });
   }
   return out;

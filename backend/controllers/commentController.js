@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { notify } from "./notificationController.js";
+import { sendTo } from "../utils/events.js";
 
 // Mentions are written as @[Name](user-id) by the comment box
 const MENTION_RE = /@\[([^\]]{1,80})\]\(([0-9a-f-]{36})\)/g;
@@ -99,6 +100,7 @@ export const addComment = async (req, res) => {
         message: `${author} commented on your task: "${snippet}"`,
       });
     await notify(req.user.id, items);
+    sendTo([...canSee], "comment", { task_id: Number(taskId) });
   } catch (e) {
     console.error("comment notifications failed:", e.message);
   }

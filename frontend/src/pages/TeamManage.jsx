@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { localMonth } from "../utils/date";
+import InvitePanel from "../components/team/InvitePanel";
+import DigestSettings from "../components/team/DigestSettings";
 
 const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -208,6 +210,13 @@ export default function TeamManage() {
         )}
       </div>
 
+      {myRole === "admin" && (
+        <>
+          <InvitePanel teamId={id} />
+          <DigestSettings team={team} onSaved={(d) => setTeam((t) => ({ ...t, ...d }))} />
+        </>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
         {["members", "stats"].map((t) => (
@@ -322,4 +331,4 @@ export default function TeamManage() {
       </div>
     </div>
   );
-}
+}

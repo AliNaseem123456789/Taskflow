@@ -13,8 +13,10 @@ import tagRoutes from "./routes/tagRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import eventRoutes from "./routes/eventRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
+import { runTeamDigestJob } from "./controllers/teamController.js";
 import { requestLogger } from "./middleware/logger.js";
 
 const app = express();
@@ -38,6 +40,7 @@ app.use("/tags", tagRoutes);
 app.use("/teams", teamRoutes);
 app.use("/goals", goalRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/events", eventRoutes); // live updates (Server-Sent Events)
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
@@ -50,6 +53,11 @@ if (isMainWorker) {
   // Per-user reminders (every minute, in each user's timezone)
   cron.schedule("* * * * *", () =>
     runReminderJob().catch((e) => console.error("[Cron] reminders:", e.message))
+  );
+
+  // Scheduled team digests (every minute, in each team's timezone)
+  cron.schedule("* * * * *", () =>
+    runTeamDigestJob().catch((e) => console.error("[Cron] digests:", e.message))
   );
 
   // Recurring tasks: checked every hour so each user gets theirs just after

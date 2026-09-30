@@ -1,8 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, LogIn, ThumbsUp, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Users, Plus, LogIn, ThumbsUp, ChevronLeft, ChevronRight, Settings, MessageCircle } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { localDate, shiftDate } from "../utils/date";
+import { useLiveEvent } from "../utils/live";
+import TaskMeta from "../components/TaskMeta";
+import StandupTab from "../components/team/StandupTab";
+import ProjectsTab from "../components/team/ProjectsTab";
+import TeamGoalsTab from "../components/team/TeamGoalsTab";
+
+const TABS = [
+  ["feed", "Feed"],
+  ["standup", "Standup"],
+  ["projects", "Projects"],
+  ["goals", "Goals"],
+];
 
 const STATUS_BADGE = {
   Done:    "bg-emerald-50 text-emerald-700",
@@ -102,6 +114,7 @@ function NoTeam({ onCreate, onJoin }) {
 
 // ── Task card in feed ─────────────────────────────────────────────────────────
 function FeedTaskCard({ task, currentUserId }) {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(
     task.reactions?.some((r) => r.user_id === currentUserId) ?? false
   );
@@ -119,9 +132,18 @@ function FeedTaskCard({ task, currentUserId }) {
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
       <div className="flex-1 min-w-0">
-        <p className={`text-sm text-gray-900 ${task.status === "Done" ? "line-through text-gray-400" : ""}`}>
+        <button
+          onClick={() => navigate(`/tasks/${task.id}`)}
+          className={`text-left text-sm text-gray-900 hover:underline ${task.status === "Done" ? "line-through text-gray-400" : ""}`}
+        >
           {task.title}
-        </p>
+        </button>
+        {task.project && (
+          <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-gray-500">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: task.project.color }} />
+            {task.project.name}
+          </span>
+        )}
         {task.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
             {task.tags.map((tag) => (
@@ -135,8 +157,16 @@ function FeedTaskCard({ task, currentUserId }) {
             ))}
           </div>
         )}
+        <TaskMeta task={task} />
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => navigate(`/tasks/${task.id}`)}
+          className="text-gray-400 hover:text-gray-600"
+          title="Comments"
+        >
+          <MessageCircle size={12} />
+        </button>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge}`}>
           {task.status}
         </span>
@@ -206,6 +236,7 @@ export default function TeamPage() {
   const [date, setDate]               = useState(localDate());
   const [loading, setLoading]         = useState(true);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [tab, setTab]                 = useState("feed");
 
   const currentUserId = (() => {
     try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; }
@@ -221,14 +252,21 @@ export default function TeamPage() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  useEffect(() => {
+  const loadFeed = (quiet = false) => {
     if (!activeTeam) return;
-    setFeedLoading(true);
-    apiRequest(`/teams/${activeTeam.id}/feed?date=${date}`, "GET", null)
+    if (!quiet) setFeedLoading(true);
+    return apiRequest(`/teams/${activeTeam.id}/feed?date=${date}`, "GET", null)
       .then(setFeed)
       .catch(() => setFeed([]))
       .finally(() => setFeedLoading(false));
-  }, [activeTeam, date]);
+  };
+
+  useEffect(() => {
+    loadFeed();
+  }, [activeTeam, date]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // live: a teammate added/changed a task or someone joined -> refresh quietly
+  useLiveEvent(["task", "team"], () => loadFeed(true));
 
   const handleCreate = async (name) => {
     const team = await apiRequest("/teams", "POST", { name });
@@ -290,7 +328,7 @@ export default function TeamPage() {
 
         <div className="flex items-center gap-2">
           {/* Date nav */}
-          <div className="flex items-center gap-1 border border-gray-200 rounded-md overflow-hidden">
+          <div className={`items-center gap-1 border border-gray-200 rounded-md overflow-hidden ${tab === "feed" || tab === "standup" ? "flex" : "hidden"}`}>
             <button
               onClick={() => stepDate(-1)}
               className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors border-r border-gray-200"
@@ -323,8 +361,27 @@ export default function TeamPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200 mb-5">
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-3 py-2 text-sm -mb-px border-b-2 transition-colors ${
+              tab === key ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "standup" && <StandupTab team={activeTeam} date={date} />}
+      {tab === "projects" && <ProjectsTab team={activeTeam} />}
+      {tab === "goals" && <TeamGoalsTab team={activeTeam} />}
+
       {/* Feed */}
-      {feedLoading ? (
+      {tab !== "feed" ? null : feedLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
         </div>
@@ -337,4 +394,4 @@ export default function TeamPage() {
       )}
     </div>
   );
-}
+}

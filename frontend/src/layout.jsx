@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import { isLoggedIn } from "./api/api";
 import VerifyEmailBanner from "./components/VerifyEmailBanner";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
+import { startLive } from "./utils/live";
 
 // Pages that need a login and show the sidebar
 const AUTH_ROUTES = [
@@ -21,6 +22,7 @@ const AUTH_ROUTES = [
   "/board",
   "/goals",
   "/tasks/",
+  "/join",
 ];
 
 const Layout = ({ children }) => {
@@ -29,6 +31,11 @@ const Layout = ({ children }) => {
 
   const isAppRoute = AUTH_ROUTES.some((r) => location.pathname.toLowerCase().startsWith(r));
   const showSidebar = isLoggedIn() && isAppRoute;
+
+  // open the live-updates connection once we're inside the app
+  useEffect(() => {
+    if (showSidebar) startLive();
+  }, [showSidebar]);
 
   if (showSidebar) {
     return (

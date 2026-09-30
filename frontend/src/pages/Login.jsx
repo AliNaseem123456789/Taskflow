@@ -100,7 +100,7 @@ export default function Login() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Don't have an account?{" "}
-          <Link to="/signup" className="text-gray-900 font-medium hover:underline">
+          <Link to="/signup" state={location.state} className="text-gray-900 font-medium hover:underline">
             Sign up
           </Link>
         </p>

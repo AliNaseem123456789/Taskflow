@@ -3,6 +3,7 @@ import { X, Loader2 } from "lucide-react";
 import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
+import { useMyProjects } from "../utils/projects";
 
 const inputCls =
   "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
@@ -19,7 +20,9 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     date_logged: task.date_logged || "",
     blocker: task.blocker || "",
     recurrence: task.recurrence || "",
+    project_id: task.project_id || "",
   });
+  const projects = useMyProjects();
   const [tags, setTags] = useState(task.tags || []);
   const [allTags, setAllTags] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -122,6 +125,18 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
               <p className="text-xs text-gray-400 mt-1">A new copy is added as "Doing" each day it repeats.</p>
             )}
           </div>
+          {(projects.length > 0 || form.project_id) && (
+            <div>
+              <label className={labelCls}>Team project</label>
+              <select className={inputCls} value={form.project_id} onChange={set("project_id")}>
+                <option value="">No project</option>
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.team_name})</option>)}
+                {form.project_id && !projects.some((p) => p.id === form.project_id) && task.project && (
+                  <option value={form.project_id}>{task.project.name}</option>
+                )}
+              </select>
+            </div>
+          )}
           <div>
             <label className={labelCls}>What's blocking you?</label>
             <input className={inputCls} value={form.blocker} onChange={set("blocker")} placeholder="Leave empty if nothing" />
