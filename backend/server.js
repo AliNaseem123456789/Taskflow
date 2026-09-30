@@ -14,9 +14,11 @@ import teamRoutes from "./routes/teamRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
+import integrationRoutes from "./routes/integrationRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
+import { runImportJob } from "./controllers/integrationController.js";
 import { requestLogger } from "./middleware/logger.js";
 
 const app = express();
@@ -41,6 +43,7 @@ app.use("/teams", teamRoutes);
 app.use("/goals", goalRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/events", eventRoutes); // live updates (Server-Sent Events)
+app.use("/integrations", integrationRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
@@ -66,6 +69,11 @@ if (isMainWorker) {
     runRecurringJob().catch((e) => console.error("[Cron] recurring:", e.message));
   cron.schedule("5 * * * *", recurring);
   recurring();
+
+  // GitHub / Jira: import finished work every 3 hours
+  cron.schedule("20 */3 * * *", () =>
+    runImportJob().catch((e) => console.error("[Cron] imports:", e.message))
+  );
 }
 
 const PORT = process.env.PORT || 5000;

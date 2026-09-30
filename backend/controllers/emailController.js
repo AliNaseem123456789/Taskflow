@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer";
 import { supabase } from "../config/supabase.js";
 import { clockIn, parseClock } from "../utils/time.js";
+import { sendSms } from "../utils/sms.js";
+import { postToSlack } from "../utils/slack.js";
+import { sendPushToUsers } from "../utils/push.js";
+import { decrypt } from "../utils/secrets.js";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -21,10 +25,11 @@ export const appLink = (path) => {
 };
 
 // Records every message we send in email_logs. Never throws.
-export const logMessage = async ({ to, subject, status, error = null }) => {
+export const logMessage = async ({ to, subject, status, error = null, channel = "email" }) => {
   try {
     await supabase.from("email_logs").insert([
       {
+        channel,
         to,
         subject,
         status,
@@ -184,7 +189,7 @@ const claimReminder = async (id) => {
 export const runReminderJob = async () => {
   const { data: reminders, error } = await supabase
     .from("user_reminders")
-    .select("*, users(email, name, timezone)")
+    .select("*, users(id, email, name, timezone, phone, slack_webhook)")
     .eq("is_active", true);
 
   if (error) return console.error("[Cron] Error fetching reminders:", error.message);
@@ -200,7 +205,7 @@ export const runReminderJob = async () => {
     if (late < 0 || late >= SEND_WINDOW_MIN) continue;
 
     const channels = (r.delivery_method || []).map((d) => d.toLowerCase());
-    if (!channels.includes("email")) continue;
+    if (!channels.some((c) => ["email", "sms", "slack", "push"].includes(c))) continue;
 
     if (!(await claimReminder(r.id))) continue;
 
@@ -210,8 +215,21 @@ export const runReminderJob = async () => {
         ? "Here's a reminder to review and log your tasks for the day."
         : "Don't forget to log what you've accomplished today!";
 
-    await sendReminderToUser(user, subject, message);
+    await deliverReminder(user, channels, subject, message);
   }
+};
+
+// Sends one reminder on every channel the user picked. Each send is logged.
+const deliverReminder = async (user, channels, subject, message) => {
+  const text = `${subject}: ${message}`;
+  const log = (channel, to, ok) => logMessage({ channel, to, subject, status: ok ? "sent" : "failed" });
+
+  if (channels.includes("email")) await sendReminderToUser(user, subject, message);
+  if (channels.includes("sms") && user.phone) log("sms", user.phone, await sendSms(user.phone, text));
+  if (channels.includes("slack") && user.slack_webhook)
+    log("slack", "slack", await postToSlack(decrypt(user.slack_webhook), `*${subject}*\n${message}`));
+  if (channels.includes("push"))
+    log("push", user.id, (await sendPushToUsers([user.id], { title: subject, body: message, url: "/mydones" })) > 0);
 };
 
 export { sendReminderToUser };

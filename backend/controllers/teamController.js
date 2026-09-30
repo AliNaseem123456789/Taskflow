@@ -5,6 +5,8 @@ import { notify } from "./notificationController.js";
 import { todayIn, monthIn, monthRange, clockIn, parseClock, safeTz } from "../utils/time.js";
 import { hashToken } from "../utils/session.js";
 import { publishToTeam } from "../utils/events.js";
+import { postToSlack } from "../utils/slack.js";
+import { decrypt } from "../utils/secrets.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,8 @@ export const getTeam = async (req, res) => {
 
   res.json({
     ...team,
+    slack_webhook: undefined,
+    slack_connected: !!team.slack_webhook,
     members: members.map((m) => ({ ...m.users, role: m.role, joined_at: m.joined_at })),
     my_role: membership.role,
   });
@@ -266,7 +270,7 @@ export const getTeamStats = async (req, res) => {
 // Builds the digest text for one team and emails every member.
 // `date` is the day to report on (YYYY-MM-DD).
 const sendDigest = async (teamId, date) => {
-  const { data: team } = await supabase.from("teams").select("name").eq("id", teamId).single();
+  const { data: team } = await supabase.from("teams").select("name, slack_webhook").eq("id", teamId).single();
   const { data: members } = await supabase
     .from("team_members")
     .select("user_id, users(email, name)")
@@ -302,6 +306,8 @@ const sendDigest = async (teamId, date) => {
   for (const m of members) {
     await sendEmail(m.users.email, `[${team.name}] Daily digest — ${date}`, body);
   }
+  if (team.slack_webhook)
+    await postToSlack(decrypt(team.slack_webhook), `*${team.name} — daily digest ${date}*\n\`\`\`${sections.join("\n\n")}\`\`\``);
 };
 
 // POST /teams/:id/digest — admin sends it right now

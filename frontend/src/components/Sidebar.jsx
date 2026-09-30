@@ -16,6 +16,7 @@ import {
   Search,
   Columns3,
   Target,
+  Plug,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Users,           label: "Team",       path: "/team"      },
   { icon: Bell,            label: "Reminders",  path: "/reminders" },
   { icon: BarChart3,       label: "Reports",    path: "/reports"   },
+  { icon: Plug,            label: "Integrations", path: "/integrations" },
   { icon: UserCircle,      label: "Profile",    path: "/profile"   },
 ];
 

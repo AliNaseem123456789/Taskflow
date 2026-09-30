@@ -31,6 +31,7 @@ import {
   deleteTeamGoal,
 } from "../controllers/projectController.js";
 import { getStandups, getStandupDraft, saveStandup } from "../controllers/standupController.js";
+import { setTeamSlack } from "../controllers/integrationController.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -56,6 +57,7 @@ router.get("/:id/stats", authenticate, getTeamStats);
 // Digest
 router.post("/:id/digest", authenticate, sendTeamDigest);
 router.put("/:id/digest-settings", authenticate, updateDigestSettings);
+router.put("/:id/slack", authenticate, setTeamSlack);
 
 // Email invites
 router.get("/:id/invites", authenticate, getInvites);

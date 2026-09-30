@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { sendTo } from "../utils/events.js";
+import { sendPushToUsers } from "../utils/push.js";
 
 // Create in-app notifications. Never throws; never notifies the actor.
 // items: [{ user_id, type, message, task_id?, link? }]
@@ -11,6 +12,9 @@ export const notify = async (actorId, items) => {
   const { error } = await supabase.from("notifications").insert(rows);
   if (error) return console.error("notify failed:", error.message);
   sendTo(rows.map((r) => r.user_id), "notification", {});
+  // also as a browser notification, for people who turned push on
+  for (const r of rows)
+    sendPushToUsers([r.user_id], { title: "Taskflow", body: r.message, url: r.link || "/dashboard" }).catch(() => {});
 };
 
 // GET /notifications  -> { unread, items: [...latest 30] }

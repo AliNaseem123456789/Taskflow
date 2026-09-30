@@ -3,6 +3,7 @@ import { todayIn, dayNumber, monthRange, addDays } from "../utils/time.js";
 import { canAccessTask } from "./commentController.js";
 import { publishToTeammates } from "../utils/events.js";
 import { canUseProject } from "./projectController.js";
+import { syncTaskToGoogle } from "./integrationController.js";
 
 // tell the owner's teammates (and the owner's other tabs) something changed
 const announce = (userId, action, taskId) =>
@@ -258,6 +259,7 @@ export const addTask = async (req, res) => {
 
     res.status(201).json(await loadTask(data.id));
     announce(req.user.id, "created", data.id);
+    syncTaskToGoogle(req.user.id, data).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -294,6 +296,7 @@ export const updateTask = async (req, res) => {
 
     res.json(await loadTask(data.id));
     announce(req.user.id, "updated", data.id);
+    syncTaskToGoogle(req.user.id, data).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -328,6 +331,12 @@ export const reorderTasks = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
+    const { data: task } = await supabase
+      .from("tasks")
+      .select("id, google_event_id")
+      .eq("id", req.params.id)
+      .eq("user_id", req.user.id)
+      .maybeSingle();
     const { error } = await supabase
       .from("tasks")
       .delete()
@@ -336,6 +345,7 @@ export const deleteTask = async (req, res) => {
     if (error) throw error;
     res.json({ success: true });
     announce(req.user.id, "deleted", Number(req.params.id));
+    if (task?.google_event_id) syncTaskToGoogle(req.user.id, task, { deleted: true }).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -389,7 +399,7 @@ export const runRecurringJob = async () => {
         due_date: today,
         recurrence_parent_id: t.id,
       }])
-      .select("id")
+      .select("*")
       .single();
     if (insertError) continue; // already made today
 
@@ -397,6 +407,7 @@ export const runRecurringJob = async () => {
     if (tagIds.length)
       await supabase.from("task_tags").insert(tagIds.map((tag_id) => ({ task_id: copy.id, tag_id })));
     announce(t.user_id, "created", copy.id);
+    syncTaskToGoogle(t.user_id, copy).catch(() => {});
     created++;
   }
   if (created) console.log(`[Cron] recurring: created ${created} task(s)`);

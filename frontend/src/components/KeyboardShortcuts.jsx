@@ -13,6 +13,7 @@ const GO_TO = {
   t: ["/team", "Team"],
   r: ["/reports", "Reports"],
   p: ["/profile", "Profile"],
+  i: ["/integrations", "Integrations"],
 };
 
 const HELP = [

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { apiRequest } from "../utils/api";
+import { Link } from "react-router-dom";
+
+const CHANNELS = ["Email", "SMS", "Slack", "Push"];
 import {
   Checkbox,
   FormControlLabel,
@@ -28,6 +31,24 @@ export default function Remainders() {
   const [notifyLowActivity, setNotifyLowActivity] = useState(true);
   const [notifyTaskAssigned, setNotifyTaskAssigned] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [integrations, setIntegrations] = useState(null);
+
+  useEffect(() => {
+    apiRequest("/integrations").then(setIntegrations).catch(() => {});
+  }, []);
+
+  // SMS / Slack / Push only work once they're set up on the Integrations page
+  const channelReady = (ch) => {
+    if (ch === "Email" || !integrations) return true;
+    if (ch === "SMS") return integrations.server.sms && !!integrations.phone;
+    if (ch === "Slack") return integrations.slack_connected;
+    if (ch === "Push") return integrations.push_devices > 0;
+    return true;
+  };
+  const channelHint = (ch) =>
+    ch === "SMS" && !integrations?.server.sms
+      ? "SMS isn't set up on the server yet"
+      : `Set up ${ch} on the Integrations page first`;
   useEffect(() => {
     const fetchReminders = async () => {
       try {
@@ -134,7 +155,8 @@ export default function Remainders() {
               <p className="text-gray-600 text-sm leading-relaxed">
                 You can customize when and how you receive reminders or digests.
                 Choose the days, time, and preferred channels (Email, SMS,
-                Slack).
+                Slack, browser push). Set up SMS, Slack and push on the{" "}
+                <Link to="/integrations" className="underline text-gray-800">Integrations</Link> page.
               </p>
             </div>
             <div className="md:w-2/3 space-y-6">
@@ -230,11 +252,13 @@ export default function Remainders() {
                     Send reminders to my
                   </label>
                   <div className="flex gap-2 flex-wrap">
-                    {["Email", "SMS", "Slack"].map((ch) => (
+                    {CHANNELS.map((ch) => (
                       <button
                         key={ch}
+                        disabled={!channelReady(ch) && !reminderChannels.includes(ch)}
+                        title={channelReady(ch) ? "" : channelHint(ch)}
                         onClick={() => toggleChannel("reminder", ch)}
-                        className={`px-4 py-1.5 rounded-md border text-sm font-medium ${
+                        className={`px-4 py-1.5 rounded-md border text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${
                           reminderChannels.includes(ch)
                             ? "bg-red-50 border-red-400 text-red-600"
                             : "border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -315,11 +339,13 @@ export default function Remainders() {
                     Send digests to my
                   </label>
                   <div className="flex gap-2 flex-wrap">
-                    {["Email", "SMS", "Slack"].map((ch) => (
+                    {CHANNELS.map((ch) => (
                       <button
                         key={ch}
+                        disabled={!channelReady(ch) && !digestChannels.includes(ch)}
+                        title={channelReady(ch) ? "" : channelHint(ch)}
                         onClick={() => toggleChannel("digest", ch)}
-                        className={`px-4 py-1.5 rounded-md border text-sm font-medium ${
+                        className={`px-4 py-1.5 rounded-md border text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed ${
                           digestChannels.includes(ch)
                             ? "bg-red-50 border-red-400 text-red-600"
                             : "border-gray-300 text-gray-600 hover:bg-gray-50"

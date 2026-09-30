@@ -23,6 +23,7 @@ const AUTH_ROUTES = [
   "/goals",
   "/tasks/",
   "/join",
+  "/integrations",
 ];
 
 const Layout = ({ children }) => {

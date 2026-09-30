@@ -12,6 +12,21 @@ export default function DigestSettings({ team, onSaved }) {
   const [time, setTime] = useState({ hour, minute, meridian });
   const [days, setDays] = useState(team.digest_days || ["Mon", "Tue", "Wed", "Thu", "Fri"]);
   const [status, setStatus] = useState("");
+  const [slackUrl, setSlackUrl] = useState("");
+  const [slackStatus, setSlackStatus] = useState("");
+  const [slackOn, setSlackOn] = useState(!!team.slack_connected);
+
+  const saveSlack = async (webhook) => {
+    setSlackStatus("Checking with Slack…");
+    try {
+      const r = await apiRequest(`/teams/${team.id}/slack`, "PUT", { webhook });
+      setSlackOn(r.connected);
+      setSlackUrl("");
+      setSlackStatus(r.connected ? "Connected — a test message was posted" : "Removed");
+    } catch (err) {
+      setSlackStatus(err.message);
+    }
+  };
 
   const toggleDay = (d) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
@@ -76,6 +91,28 @@ export default function DigestSettings({ team, onSaved }) {
       <div className="flex items-center gap-3 mt-4">
         <button onClick={save} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Save</button>
         {status && <span className="text-xs text-gray-500">{status}</span>}
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-gray-100">
+        <p className="text-xs font-medium text-gray-700 mb-2">
+          Also post the digest to a Slack channel {slackOn && <span className="text-emerald-600">· connected</span>}
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={slackUrl}
+            onChange={(e) => setSlackUrl(e.target.value)}
+            placeholder="https://hooks.slack.com/services/..."
+            className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md outline-none bg-white"
+          />
+          <button onClick={() => saveSlack(slackUrl)} disabled={!slackUrl}
+            className="px-3 py-1.5 border border-gray-200 text-sm rounded-md hover:bg-gray-50 disabled:opacity-50">
+            Connect
+          </button>
+          {slackOn && (
+            <button onClick={() => saveSlack("")} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-900">Remove</button>
+          )}
+        </div>
+        {slackStatus && <p className="text-xs text-gray-500 mt-1.5">{slackStatus}</p>}
       </div>
     </div>
   );

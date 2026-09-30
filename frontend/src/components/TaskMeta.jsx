@@ -1,4 +1,4 @@
-import { CalendarClock, Repeat, AlertOctagon } from "lucide-react";
+import { CalendarClock, Repeat, AlertOctagon, ExternalLink } from "lucide-react";
 import { priorityInfo, recurrenceLabel } from "../utils/taskMeta";
 import { localDate } from "../utils/date";
 
@@ -40,6 +40,22 @@ export default function TaskMeta({ task, showBlocker = true }) {
         <Repeat size={11} />
         {task.recurrence ? recurrenceLabel(task.recurrence) : "Repeats"}
       </span>
+    );
+
+  if (task.external_url)
+    chips.push(
+      <a
+        key="x"
+        href={task.external_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-900 hover:underline"
+        title="Imported — open the original"
+      >
+        <ExternalLink size={11} />
+        {task.external_id?.startsWith("jira:") ? "Jira" : "GitHub"}
+      </a>
     );
 
   if (!chips.length && !(showBlocker && task.blocker)) return null;
