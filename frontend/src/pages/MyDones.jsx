@@ -45,9 +45,15 @@ export default function MyDones() {
     });
   };
 
-  const handleAdd = async (title, tags = []) => {
+  const handleAdd = async (title, tags = [], _date, extra = {}) => {
     try {
-      const newTask = await apiRequest("/tasks", "POST", { title, tags, status: "Done", date_logged: dateStr });
+      const newTask = await apiRequest("/tasks", "POST", {
+        status: "Done",
+        ...extra,
+        title,
+        tags,
+        date_logged: dateStr,
+      });
       setTasks((prev) => [newTask, ...prev]);
       setShowAddForm(false);
     } catch (err) {
@@ -73,6 +79,15 @@ export default function MyDones() {
     } catch (err) {
       console.error("Failed to delete:", err.message);
     }
+  };
+
+  const handleUpdate = (updated) => {
+    // moved to another day -> drop it from this list
+    setTasks((prev) =>
+      updated.date_logged === dateStr
+        ? prev.map((t) => (t.id === updated.id ? updated : t))
+        : prev.filter((t) => t.id !== updated.id)
+    );
   };
 
   const handleExport = (format) => {
@@ -159,6 +174,7 @@ export default function MyDones() {
           tasks={filteredTasks}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
+          onUpdate={handleUpdate}
         />
       </div>
     </div>

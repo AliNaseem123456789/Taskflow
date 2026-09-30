@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 const GO_TO = {
   d: ["/dashboard", "Dashboard"],
   m: ["/mydones", "My Dones"],
+  b: ["/board", "Board"],
+  o: ["/goals", "Goals"],
   c: ["/calendar", "Calendar"],
   s: ["/search", "Search"],
   t: ["/team", "Team"],

@@ -11,7 +11,10 @@ import taskRoutes from "./routes/taskRoutes.js";
 import emailRoutes from "./routes/emailRoutes.js";
 import tagRoutes from "./routes/tagRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
+import goalRoutes from "./routes/goalRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
+import { runRecurringJob } from "./controllers/taskController.js";
 import { requestLogger } from "./middleware/logger.js";
 
 const app = express();
@@ -33,6 +36,8 @@ app.use("/tasks", taskRoutes);   // includes /tasks/search, /tasks/streak, /task
 app.use("/email", emailRoutes);
 app.use("/tags", tagRoutes);
 app.use("/teams", teamRoutes);
+app.use("/goals", goalRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
@@ -46,6 +51,13 @@ if (isMainWorker) {
   cron.schedule("* * * * *", () =>
     runReminderJob().catch((e) => console.error("[Cron] reminders:", e.message))
   );
+
+  // Recurring tasks: checked every hour so each user gets theirs just after
+  // their own midnight. Also runs once at startup to catch up.
+  const recurring = () =>
+    runRecurringJob().catch((e) => console.error("[Cron] recurring:", e.message));
+  cron.schedule("5 * * * *", recurring);
+  recurring();
 }
 
 const PORT = process.env.PORT || 5000;

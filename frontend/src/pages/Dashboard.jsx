@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckSquare, Clock, AlertTriangle, TrendingUp, Flame } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import Heatmap from "../components/Heatmap";
+import GoalBar from "../components/GoalBar";
 import { localMonth } from "../utils/date";
 
 export default function Dashboard() {
@@ -10,6 +12,7 @@ export default function Dashboard() {
   const [recentTasks, setRecentTasks] = useState([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [goals, setGoals] = useState([]);
 
 
   useEffect(() => {
@@ -18,10 +21,12 @@ export default function Dashboard() {
       try {
         const month = localMonth();
 
-        const [tasks, streakData] = await Promise.all([
+        const [tasks, streakData, goalList] = await Promise.all([
           apiRequest(`/tasks?month=${month}`, "GET", null),
           apiRequest("/tasks/streak", "GET", null).catch(() => ({ streak: 0 })),
+          apiRequest("/goals").catch(() => []),
         ]);
+        setGoals(goalList);
 
         setStreak(streakData.streak || 0);
         setStats({
@@ -128,6 +133,25 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Goals */}
+      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-medium text-gray-700">Goals</span>
+          <button onClick={() => navigate("/goals")} className="text-xs text-gray-500 hover:text-gray-900 font-medium">
+            {goals.length ? "Manage" : "Set a goal"}
+          </button>
+        </div>
+        {goals.length === 0 ? (
+          <p className="text-sm text-gray-400">No goals yet — e.g. "Finish 10 tasks this week".</p>
+        ) : (
+          <div className="space-y-4">
+            {goals.map((g) => <GoalBar key={g.id} goal={g} />)}
+          </div>
+        )}
+      </div>
+
+      <Heatmap />
+
       {/* Recent tasks */}
       <div className="bg-white border border-gray-200 rounded-lg">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -181,4 +205,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+}

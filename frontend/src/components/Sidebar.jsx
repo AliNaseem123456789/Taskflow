@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { logout, getStoredUser } from "../api/api";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -13,12 +14,16 @@ import {
   X,
   Users,
   Search,
+  Columns3,
+  Target,
 } from "lucide-react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard",  path: "/dashboard" },
   { icon: CheckSquare,     label: "My Dones",   path: "/mydones"   },
+  { icon: Columns3,        label: "Board",      path: "/board"     },
   { icon: Calendar,        label: "Calendar",   path: "/calendar"  },
+  { icon: Target,          label: "Goals",      path: "/goals"     },
   { icon: Search,          label: "Search",     path: "/search"    },
   { icon: Users,           label: "Team",       path: "/team"      },
   { icon: Bell,            label: "Reminders",  path: "/reminders" },
@@ -50,6 +55,8 @@ export default function Sidebar({ onClose }) {
           <div className="w-5 h-5 bg-gray-900 rounded" />
           <span className="font-semibold text-gray-900 text-[15px]">Task Flow</span>
         </div>
+        <div className="flex items-center gap-1">
+        <NotificationBell />
         {onClose && (
           <button
             onClick={onClose}
@@ -58,13 +65,14 @@ export default function Sidebar({ onClose }) {
             <X size={18} />
           </button>
         )}
+        </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path ||
-            (path === "/team" && location.pathname.startsWith("/team"));
+            (path === "/team" && location.pathname.startsWith("/team/"));
           return (
             <button
               key={path}

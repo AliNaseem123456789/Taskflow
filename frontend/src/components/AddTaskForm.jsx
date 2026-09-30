@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { Plus, X, ChevronDown } from "lucide-react";
 import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
+import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
+
+const smallInput =
+  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
+const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "" };
 
 export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [title, setTitle] = useState("");
@@ -9,6 +14,9 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [allTags, setAllTags] = useState([]);
   const [showTags, setShowTags] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [extra, setExtra] = useState(EMPTY_EXTRA);
+  const setField = (key) => (e) => setExtra((x) => ({ ...x, [key]: e.target.value }));
 
 
   useEffect(() => {
@@ -32,10 +40,11 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
     if (!title.trim()) return;
     setLoading(true);
     try {
-      await onAdd(title.trim(), selectedTags.map((t) => t.id), dateLogged);
+      await onAdd(title.trim(), selectedTags.map((t) => t.id), dateLogged, extra);
       setTitle("");
       setSelectedTags([]);
       setShowTags(false);
+      setExtra(EMPTY_EXTRA);
     } finally {
       setLoading(false);
     }
@@ -59,8 +68,17 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
         />
       </div>
 
-      {/* Tag picker toggle */}
-      <div>
+      {/* Tag picker + more options toggles */}
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => setShowMore((v) => !v)}
+          className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors order-2"
+        >
+          <ChevronDown size={12} className={`transition-transform ${showMore ? "rotate-180" : ""}`} />
+          More options
+        </button>
+      <div className="order-1">
         <button
           type="button"
           onClick={() => setShowTags((v) => !v)}
@@ -86,6 +104,28 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
           </div>
         )}
       </div>
+      </div>
+
+      {showMore && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <select className={smallInput} value={extra.status} onChange={setField("status")} title="Status">
+            {STATUSES.map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <select className={smallInput} value={extra.priority} onChange={setField("priority")} title="Priority">
+            {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label} priority</option>)}
+          </select>
+          <input type="date" className={smallInput} value={extra.due_date} onChange={setField("due_date")} title="Due date" />
+          <select className={smallInput} value={extra.recurrence} onChange={setField("recurrence")} title="Repeat">
+            {RECURRENCES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+          <input
+            className={`${smallInput} col-span-2 sm:col-span-4`}
+            value={extra.blocker}
+            onChange={setField("blocker")}
+            placeholder="What's blocking you? (optional)"
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-2 pt-1">
@@ -107,4 +147,4 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
       </div>
     </form>
   );
-}
+}

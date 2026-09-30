@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { STATUSES, STATUS_BADGE, PRIORITIES } from "../utils/taskMeta";
+import TaskMeta from "../components/TaskMeta";
 
-const STATUS_BADGE = {
-  Done:    "bg-emerald-50 text-emerald-700",
-  Doing:   "bg-amber-50 text-amber-700",
-  Delayed: "bg-rose-50 text-rose-700",
-};
+const EMPTY_FILTERS = { status: "", priority: "", tag: "", from: "", to: "" };
+const filterCls =
+  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -22,20 +23,27 @@ export default function SearchPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [tags, setTags] = useState([]);
+  const navigate = useNavigate();
 
   const debouncedQ = useDebounce(query, 300);
+  const hasFilters = Object.values(filters).some(Boolean);
+  const setFilter = (key) => (e) => setFilters((f) => ({ ...f, [key]: e.target.value }));
 
   useEffect(() => {
-    if (!debouncedQ.trim()) { setResults([]); setSearched(false); return; }
+    apiRequest("/tags").then(setTags).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!debouncedQ.trim() && !hasFilters) { setResults([]); setSearched(false); return; }
 
     const run = async () => {
       setLoading(true);
       try {
-        const data = await apiRequest(
-          `/tasks/search?q=${encodeURIComponent(debouncedQ)}`,
-          "GET",
-          null
-        );
+        const params = new URLSearchParams({ q: debouncedQ.trim() });
+        Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
+        const data = await apiRequest(`/tasks/search?${params}`);
         setResults(data || []);
         setSearched(true);
       } catch {
@@ -45,7 +53,7 @@ export default function SearchPage() {
       }
     };
     run();
-  }, [debouncedQ]);
+  }, [debouncedQ, filters, hasFilters]);
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl">
@@ -79,6 +87,33 @@ export default function SearchPage() {
         )}
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 -mt-3 mb-6">
+        <select className={filterCls} value={filters.status} onChange={setFilter("status")}>
+          <option value="">Any status</option>
+          {STATUSES.map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <select className={filterCls} value={filters.priority} onChange={setFilter("priority")}>
+          <option value="">Any priority</option>
+          {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+        <select className={filterCls} value={filters.tag} onChange={setFilter("tag")}>
+          <option value="">Any tag</option>
+          {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          From <input type="date" className={filterCls} value={filters.from} onChange={setFilter("from")} />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          to <input type="date" className={filterCls} value={filters.to} onChange={setFilter("to")} />
+        </label>
+        {hasFilters && (
+          <button onClick={() => setFilters(EMPTY_FILTERS)} className="text-xs text-gray-500 hover:text-gray-900 underline">
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {/* Loading */}
       {loading && (
         <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -91,7 +126,8 @@ export default function SearchPage() {
       {!loading && searched && (
         <>
           <p className="text-xs text-gray-400 mb-3">
-            {results.length} result{results.length !== 1 ? "s" : ""} for &ldquo;{debouncedQ}&rdquo;
+            {results.length} result{results.length !== 1 ? "s" : ""}
+            {debouncedQ.trim() && <> for &ldquo;{debouncedQ}&rdquo;</>}
           </p>
 
           {results.length === 0 ? (
@@ -103,7 +139,11 @@ export default function SearchPage() {
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
               {results.map((task) => (
-                <div key={task.id} className="px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                <div
+                  key={task.id}
+                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  className="px-5 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm text-gray-900 ${task.status === "Done" ? "line-through text-gray-400" : ""}`}>
@@ -121,6 +161,7 @@ export default function SearchPage() {
                           </span>
                         ))}
                       </div>
+                      <TaskMeta task={task} />
                     </div>
                     <span
                       className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
@@ -141,9 +182,9 @@ export default function SearchPage() {
       {!loading && !searched && (
         <div className="text-center py-16 text-gray-400">
           <Search size={32} className="mx-auto mb-3 text-gray-200" />
-          <p className="text-sm">Start typing to search your tasks</p>
+          <p className="text-sm">Type to search titles and notes, or pick a filter</p>
         </div>
       )}
     </div>
   );
-}
+}

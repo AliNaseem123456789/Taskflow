@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { CheckCircle, Clock, XCircle, Trash2, ThumbsUp, MessageCircle, ChevronDown } from "lucide-react";
+import { CheckCircle, Clock, XCircle, Trash2, ThumbsUp, MessageCircle, ChevronDown, Pencil } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { getStoredUser } from "../api/api";
+import CommentPanel from "./CommentPanel";
+import TaskMeta from "./TaskMeta";
+import TaskEditModal from "./TaskEditModal";
 
 const STATUS = {
   Done:    { icon: CheckCircle, active: "text-emerald-600", badge: "bg-emerald-50 text-emerald-700" },
@@ -8,90 +12,14 @@ const STATUS = {
   Delayed: { icon: XCircle,      active: "text-rose-500",    badge: "bg-rose-50 text-rose-700"     },
 };
 
-// ── Inline comment panel ──────────────────────────────────────────────────────
-function CommentPanel({ taskId }) {
-  const [comments, setComments]   = useState(null);
-  const [input, setInput]         = useState("");
-  const [loading, setLoading]     = useState(false);
-  const userId = (() => { try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; } })();
-
-  const load = async () => {
-    if (comments !== null) return;
-    const data = await apiRequest(`/tasks/${taskId}/comments`, "GET", null).catch(() => []);
-    setComments(data);
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    setLoading(true);
-    const c = await apiRequest(`/tasks/${taskId}/comments`, "POST", { content: input }).catch(() => null);
-    if (c) setComments((prev) => [...(prev || []), c]);
-    setInput("");
-    setLoading(false);
-  };
-
-  const remove = async (cId) => {
-    await apiRequest(`/tasks/comments/${cId}`, "DELETE", null).catch(() => {});
-    setComments((prev) => prev.filter((c) => c.id !== cId));
-  };
-
-  return (
-    <div className="mt-2 border-t border-gray-100 pt-2" onClick={load}>
-      {/* Comment list */}
-      {comments?.map((c) => (
-        <div key={c.id} className="flex items-start gap-2 py-1.5 group">
-          <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[9px] font-semibold text-gray-500 shrink-0 mt-0.5">
-            {(c.user?.name || c.user?.email || "?")[0].toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-[11px] font-medium text-gray-700">
-              {c.user?.name || c.user?.email}
-            </span>
-            <p className="text-xs text-gray-600 mt-0.5">{c.content}</p>
-          </div>
-          {c.user_id === userId && (
-            <button
-              onClick={() => remove(c.id)}
-              className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-rose-400 transition-all"
-            >
-              <Trash2 size={11} />
-            </button>
-          )}
-        </div>
-      ))}
-
-      {/* Input */}
-      <form onSubmit={submit} className="flex items-center gap-2 mt-1.5">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Add a comment…"
-          className="flex-1 text-xs border border-gray-200 rounded-md px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-gray-900 placeholder:text-gray-400"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || loading}
-          className="text-xs bg-gray-900 text-white px-2.5 py-1.5 rounded-md disabled:opacity-40 hover:bg-gray-800 transition-colors"
-        >
-          Send
-        </button>
-      </form>
-    </div>
-  );
-}
-
 // ── Task row ──────────────────────────────────────────────────────────────────
-function TaskRow({ task, onStatusChange, onDelete }) {
-  const [showComments, setShowComments] = useState(false);
-  const [liked, setLiked] = useState(false);
+function TaskRow({ task, onStatusChange, onDelete, onUpdate, defaultShowComments }) {
+  const userId = getStoredUser()?.id;
+  const isMine = !task.user_id || task.user_id === userId;
+  const [showComments, setShowComments] = useState(!!defaultShowComments);
+  const [editing, setEditing] = useState(false);
+  const [liked, setLiked] = useState(() => !!task.reactions?.some((r) => r.user_id === userId));
   const [likeCount, setLikeCount] = useState(task.reactions?.length ?? 0);
-  const userId = (() => { try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; } })();
-
-  // Initialise liked state from reactions
-  useState(() => {
-    if (userId && task.reactions?.some((r) => r.user_id === userId)) setLiked(true);
-  });
 
   const handleReact = async () => {
     const res = await apiRequest(`/tasks/${task.id}/react`, "POST", {}).catch(() => null);
@@ -111,7 +39,8 @@ function TaskRow({ task, onStatusChange, onDelete }) {
           {Object.entries(STATUS).map(([s, { icon: Icon, active }]) => (
             <button
               key={s}
-              onClick={() => onStatusChange(task.id, s)}
+              disabled={!isMine || !onStatusChange}
+              onClick={() => onStatusChange?.(task.id, s)}
               title={s}
               className={`p-0.5 rounded transition-colors ${
                 task.status === s ? active : "text-gray-200 hover:text-gray-400"
@@ -141,6 +70,7 @@ function TaskRow({ task, onStatusChange, onDelete }) {
               ))}
             </div>
           )}
+          <TaskMeta task={task} />
         </div>
 
         {/* Right actions */}
@@ -170,28 +100,44 @@ function TaskRow({ task, onStatusChange, onDelete }) {
             <ChevronDown size={11} className={`transition-transform ${showComments ? "rotate-180" : ""}`} />
           </button>
 
+          {isMine && onUpdate && (
+            <button
+              onClick={() => setEditing(true)}
+              title="Edit"
+              className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-300 hover:text-gray-600 transition-all"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+
           {/* Delete */}
-          <button
-            onClick={() => onDelete(task.id)}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-300 hover:text-rose-400 transition-all"
-          >
-            <Trash2 size={14} />
-          </button>
+          {isMine && onDelete && (
+            <button
+              onClick={() => onDelete(task.id)}
+              title="Delete"
+              className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-300 hover:text-rose-400 transition-all"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Comment panel */}
       {showComments && <CommentPanel taskId={task.id} />}
+      {editing && (
+        <TaskEditModal task={task} onClose={() => setEditing(false)} onSaved={onUpdate} />
+      )}
     </li>
   );
 }
 
 // ── TaskList ──────────────────────────────────────────────────────────────────
-export default function TaskList({ tasks, onStatusChange, onDelete }) {
+export default function TaskList({ tasks, onStatusChange, onDelete, onUpdate, showComments = false, emptyText = "No tasks yet for this day." }) {
   if (!tasks || tasks.length === 0) {
     return (
       <div className="px-4 py-10 text-center">
-        <p className="text-sm text-gray-400">No tasks yet for this day.</p>
+        <p className="text-sm text-gray-400">{emptyText}</p>
       </div>
     );
   }
@@ -204,8 +150,10 @@ export default function TaskList({ tasks, onStatusChange, onDelete }) {
           task={task}
           onStatusChange={onStatusChange}
           onDelete={onDelete}
+          onUpdate={onUpdate}
+          defaultShowComments={showComments}
         />
       ))}
     </ul>
   );
-}
+}

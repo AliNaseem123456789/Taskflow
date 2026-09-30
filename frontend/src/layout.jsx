@@ -18,6 +18,9 @@ const AUTH_ROUTES = [
   "/search",
   "/team",
   "/profile",
+  "/board",
+  "/goals",
+  "/tasks/",
 ];
 
 const Layout = ({ children }) => {
@@ -31,7 +34,7 @@ const Layout = ({ children }) => {
     return (
       <div className="min-h-screen flex bg-gray-50">
         {/* Desktop sidebar */}
-        <div className="hidden lg:block shrink-0">
+        <div className="hidden lg:block shrink-0 sticky top-0 h-screen">
           <Sidebar />
         </div>
 
