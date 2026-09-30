@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` classes follow the .dark class on <html> (set by utils/theme.js) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --color-bg: #fafafa;
   --color-surface: #ffffff;
@@ -50,4 +53,58 @@ button {
 .custom-calendar {
   border: none !important;
   font-family: inherit !important;
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────────
+   The app is built from white + the gray scale, so dark mode flips that
+   palette instead of adding dark: classes to every component.
+   Light tints (bg-emerald-50 badges etc.) become dark tints, and dark text
+   colors (text-emerald-700) become light ones. */
+html.dark {
+  color-scheme: dark;
+
+  --color-bg: #0e1117;
+  --color-surface: #161b22;
+  --color-border: #2a313c;
+  --color-text-primary: #e6e8eb;
+  --color-text-secondary: #9aa3af;
+
+  --color-white: oklch(19% 0.012 264);
+  --color-gray-50: oklch(16% 0.012 264);
+  --color-gray-100: oklch(24% 0.014 264);
+  --color-gray-200: oklch(29% 0.016 264);
+  --color-gray-300: oklch(37% 0.018 262);
+  --color-gray-400: oklch(55% 0.02 262);
+  --color-gray-500: oklch(66% 0.02 262);
+  --color-gray-600: oklch(75% 0.018 262);
+  --color-gray-700: oklch(84% 0.012 262);
+  --color-gray-800: oklch(90% 0.008 262);
+  --color-gray-900: oklch(95% 0.005 262);
+  --color-gray-950: oklch(98% 0.003 262);
+
+  --color-emerald-50: oklch(28% 0.05 165);
+  --color-emerald-100: oklch(33% 0.06 165);
+  --color-emerald-600: oklch(76% 0.14 163);
+  --color-emerald-700: oklch(80% 0.12 165);
+
+  --color-amber-50: oklch(29% 0.05 80);
+  --color-amber-100: oklch(34% 0.06 80);
+  --color-amber-200: oklch(40% 0.08 80);
+  --color-amber-600: oklch(80% 0.15 70);
+  --color-amber-700: oklch(83% 0.13 70);
+  --color-amber-800: oklch(87% 0.1 75);
+
+  --color-rose-50: oklch(28% 0.06 15);
+  --color-rose-100: oklch(33% 0.07 15);
+  --color-rose-200: oklch(40% 0.09 15);
+  --color-rose-600: oklch(72% 0.17 17);
+  --color-rose-700: oklch(77% 0.15 17);
+
+  --color-red-50: oklch(28% 0.06 20);
+  --color-red-100: oklch(33% 0.07 20);
+  --color-red-600: oklch(72% 0.17 25);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3a424f;
 }

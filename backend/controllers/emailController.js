@@ -14,6 +14,12 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 20000,
 });
 
+// Full link into the frontend, e.g. appLink("/verify-email?token=abc")
+export const appLink = (path) => {
+  const base = (process.env.FRONTEND_URL || "http://localhost:5174").split(",")[0].trim();
+  return `${base.replace(/\/$/, "")}${path}`;
+};
+
 // Records every message we send in email_logs. Never throws.
 export const logMessage = async ({ to, subject, status, error = null }) => {
   try {

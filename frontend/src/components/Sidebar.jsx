@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { logout, getStoredUser } from "../api/api";
+import ThemeToggle from "./ThemeToggle";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -93,6 +94,10 @@ export default function Sidebar({ onClose }) {
             </p>
           </div>
         </div>
+        <ThemeToggle
+          withLabel
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+        />
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
@@ -103,4 +108,4 @@ export default function Sidebar({ onClose }) {
       </div>
     </div>
   );
-}
+}

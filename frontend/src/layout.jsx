@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { Menu } from "lucide-react";
 import { isLoggedIn } from "./api/api";
+import VerifyEmailBanner from "./components/VerifyEmailBanner";
+import KeyboardShortcuts from "./components/KeyboardShortcuts";
 
 // Pages that need a login and show the sidebar
 const AUTH_ROUTES = [
@@ -58,8 +60,10 @@ const Layout = ({ children }) => {
             </button>
             <span className="font-semibold text-gray-900 text-sm">Task Flow</span>
           </div>
+          <VerifyEmailBanner />
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
+        <KeyboardShortcuts />
       </div>
     );
   }

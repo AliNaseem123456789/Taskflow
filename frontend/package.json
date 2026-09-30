@@ -16,6 +16,8 @@
     "@mui/material": "^7.3.5",
     "@supabase/supabase-js": "^2.80.0",
     "axios": "^1.13.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-calendar": "^6.0.0",

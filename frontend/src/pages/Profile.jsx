@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import api, { setAccessToken, logout } from "../api/api";
+import { EditProfileForm, ChangePasswordForm } from "../components/ProfileForms";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
@@ -91,6 +92,7 @@ export default function Profile() {
   const [busyId, setBusyId] = useState(null);      // session being revoked
   const [confirmAll, setConfirmAll] = useState(false);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const clearLocalAuth = useCallback(() => {
     setAccessToken(null);
@@ -220,6 +222,14 @@ export default function Profile() {
           )}
         </div>
 
+        {editing ? (
+          <EditProfileForm
+            user={user}
+            onSaved={(u) => { setUser(u); setEditing(false); }}
+            onCancel={() => setEditing(false)}
+          />
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -233,17 +243,34 @@ export default function Profile() {
             </p>
             <p className="text-sm text-gray-900 mt-1 truncate">{user?.email || "—"}</p>
           </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Timezone
+            </p>
+            <p className="text-sm text-gray-900 mt-1">{user?.timezone || "UTC"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Email status
+            </p>
+            <p className={`text-sm mt-1 ${user?.email_verified === false ? "text-amber-600" : "text-emerald-600"}`}>
+              {user?.email_verified === false ? "Not verified" : "Verified"}
+            </p>
+          </div>
         </div>
 
         <button
           type="button"
-          disabled
-          className="mt-5 text-sm text-gray-400 font-medium cursor-not-allowed"
-          title="Coming soon"
+          onClick={() => setEditing(true)}
+          className="mt-5 text-sm text-gray-900 font-medium hover:underline"
         >
           Edit profile
         </button>
+        </>
+        )}
       </div>
+
+      <ChangePasswordForm onChanged={() => loadSessions().catch(() => {})} />
 
       {/* Active sessions -------------------------------------------- */}
       <div className="bg-white border border-gray-200 rounded-lg mb-6">
@@ -386,4 +413,4 @@ export default function Profile() {
       </div>
     </div>
   );
-}
+}

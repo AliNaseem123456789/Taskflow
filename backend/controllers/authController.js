@@ -13,8 +13,16 @@ import {
   verifyToken,
 } from "../utils/session.js";
 import { safeTz, dbDate } from "../utils/time.js";
+import {
+  createAuthToken,
+  consumeAuthToken,
+  sentRecently,
+  VERIFY_TTL_MS,
+  RESET_TTL_MS,
+} from "../utils/authTokens.js";
+import { sendEmail, appLink } from "./emailController.js";
 
-const USER_FIELDS = "id, email, name, role, timezone";
+const USER_FIELDS = "id, email, name, role, timezone, email_verified";
 
 const publicUser = (user) => ({
   id: user.id,
@@ -22,7 +30,18 @@ const publicUser = (user) => ({
   name: user.name,
   role: user.role,
   timezone: user.timezone || "UTC",
+  email_verified: user.email_verified !== false,
 });
+
+const sendVerificationEmail = async (user) => {
+  const token = await createAuthToken(user.id, "verify_email", VERIFY_TTL_MS);
+  const link = appLink(`/verify-email?token=${token}`);
+  return sendEmail(
+    user.email,
+    "Verify your email",
+    `Hi ${user.name || "there"}!\n\nPlease confirm your email address:\n${link}\n\nThis link works for 24 hours.\n\n– MyDones Team`
+  );
+};
 
 // The browser sends its timezone on signup/login; keep the account in sync.
 const syncTimezone = async (user, timezone) => {
@@ -81,6 +100,11 @@ export const signup = async (req, res) => {
       req
     );
     setRefreshCookie(res, refreshToken);
+
+    // don't make signup wait for Gmail
+    sendVerificationEmail(user).catch((e) =>
+      console.error("Verification email failed:", e.message)
+    );
 
     res.status(201).json({
       message: "Signup successful",
@@ -328,4 +352,165 @@ export const revokeSessionById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+};
+
+
+/* ------------------------------------------------------------------ */
+/* Profile                                                             */
+/* ------------------------------------------------------------------ */
+
+// PUT /auth/me  { name, timezone }
+export const updateMe = async (req, res) => {
+  const updates = {};
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim();
+    if (!name) return res.status(400).json({ error: "Name can't be empty" });
+    if (name.length > 80) return res.status(400).json({ error: "Name is too long" });
+    updates.name = name;
+  }
+  if (req.body.timezone !== undefined) updates.timezone = safeTz(req.body.timezone);
+  if (!Object.keys(updates).length)
+    return res.status(400).json({ error: "Nothing to update" });
+
+  try {
+    const { data: user, error } = await supabase
+      .from("users")
+      .update(updates)
+      .eq("id", req.user.id)
+      .select(USER_FIELDS)
+      .single();
+    if (error) throw error;
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /auth/change-password  { currentPassword, newPassword }
+// Logs out every other device.
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ error: "Both passwords are required" });
+  if (newPassword.length < 8)
+    return res.status(400).json({ error: "Password must be at least 8 characters" });
+
+  try {
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, password")
+      .eq("id", req.user.id)
+      .single();
+
+    if (!user || !(await bcrypt.compare(currentPassword, user.password)))
+      return res.status(400).json({ error: "Current password is wrong" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await supabase.from("users").update({ password: hashed }).eq("id", user.id);
+    await revokeAllUserSessions(user.id, "password_changed", req.sessionId);
+
+    res.json({ message: "Password changed. Other devices were logged out." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ------------------------------------------------------------------ */
+/* Forgot / reset password                                             */
+/* ------------------------------------------------------------------ */
+
+// POST /auth/forgot-password  { email }
+// Always answers the same way so it can't be used to check which emails exist.
+export const forgotPassword = async (req, res) => {
+  const email = String(req.body.email || "").trim();
+  const reply = () =>
+    res.json({ message: "If that email has an account, a reset link is on its way." });
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  try {
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, email, name")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (user && !(await sentRecently(user.id, "reset_password"))) {
+      const token = await createAuthToken(user.id, "reset_password", RESET_TTL_MS);
+      const link = appLink(`/reset-password?token=${token}`);
+      await sendEmail(
+        user.email,
+        "Reset your password",
+        `Hi ${user.name || "there"}!\n\nSomeone asked to reset your password. If it was you, open this link:\n${link}\n\nIt works for 1 hour. If it wasn't you, ignore this email.\n\n– MyDones Team`
+      );
+    }
+    reply();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /auth/reset-password  { token, password }
+// Logs out every device.
+export const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  if (!password || password.length < 8)
+    return res.status(400).json({ error: "Password must be at least 8 characters" });
+
+  try {
+    const userId = await consumeAuthToken(token, "reset_password");
+    if (!userId)
+      return res.status(400).json({ error: "This reset link is invalid or has expired" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    // opening the emailed link also proves they own the address
+    await supabase
+      .from("users")
+      .update({ password: hashed, email_verified: true })
+      .eq("id", userId);
+    await revokeAllUserSessions(userId, "password_reset");
+
+    res.json({ message: "Password updated. You can log in now." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ------------------------------------------------------------------ */
+/* Email verification                                                  */
+/* ------------------------------------------------------------------ */
+
+// POST /auth/send-verification
+export const resendVerification = async (req, res) => {
+  try {
+    const { data: user } = await supabase
+      .from("users")
+      .select("id, email, name, email_verified")
+      .eq("id", req.user.id)
+      .single();
+
+    if (user.email_verified)
+      return res.status(400).json({ error: "Your email is already verified" });
+    if (await sentRecently(user.id, "verify_email"))
+      return res.status(429).json({ error: "Please wait a minute before asking again" });
+
+    const ok = await sendVerificationEmail(user);
+    if (!ok) return res.status(500).json({ error: "Email could not be sent" });
+    res.json({ message: "Verification email sent" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /auth/verify-email  { token }
+export const verifyEmail = async (req, res) => {
+  try {
+    const userId = await consumeAuthToken(req.body.token, "verify_email");
+    if (!userId)
+      return res.status(400).json({ error: "This link is invalid or has expired" });
+
+    await supabase.from("users").update({ email_verified: true }).eq("id", userId);
+    res.json({ message: "Email verified" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

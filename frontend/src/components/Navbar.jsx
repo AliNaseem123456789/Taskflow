@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   return (
@@ -31,6 +32,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100" />
           <Link
             to="/login"
             className="text-[13px] text-gray-600 font-medium hover:text-gray-900 transition-colors"
@@ -47,4 +49,4 @@ export default function Navbar() {
       </div>
     </nav>
   );
-}
+}

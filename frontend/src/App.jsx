@@ -16,6 +16,9 @@ import TermsOfService from "./pages/Terms-of-service";
 import Login  from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 // App
 import Dashboard  from "./pages/Dashboard";
 import MyDones    from "./pages/MyDones";
@@ -52,6 +55,9 @@ export default function App() {
           <Route path="/"                  element={<LandingPage />} />
           <Route path="/login"             element={<GuestOnly><Login /></GuestOnly>} />
           <Route path="/signup"            element={<GuestOnly><Signup /></GuestOnly>} />
+          <Route path="/forgot-password"   element={<GuestOnly><ForgotPassword /></GuestOnly>} />
+          <Route path="/reset-password"    element={<ResetPassword />} />
+          <Route path="/verify-email"      element={<VerifyEmail />} />
           <Route path="/how-it-works"      element={<HowItWorks />} />
           <Route path="/pricing"           element={<Pricing />} />
           <Route path="/case-studies"      element={<SuccessStories />} />

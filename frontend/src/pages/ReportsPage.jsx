@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Download, RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, Sparkles } from "lucide-react";
+import ExportMenu from "../components/ExportMenu";
+import { exportJSON, exportCSV, exportPDF } from "../utils/export";
 import { apiRequest } from "../utils/api";
 import api from "../api/api";
 import { localDate } from "../utils/date";
@@ -94,15 +96,12 @@ export default function ReportsPage({ userId }) {
     if (tasks.length > 0 && getUserId()) fetchAISummary();
   }, [tasks, getUserId, fetchAISummary]);
 
-  const handleExport = () => {
-    const blob = new Blob(
-      [JSON.stringify({ tasks, ai_summary: aiSummary, generated: new Date().toISOString() }, null, 2)],
-      { type: "application/json" }
-    );
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `report-${localDate()}.json`;
-    a.click();
+  const handleExport = (format) => {
+    const name = `report-${localDate()}`;
+    if (format === "csv") exportCSV(tasks, name);
+    else if (format === "pdf")
+      exportPDF(tasks, name, "Productivity report", aiSummary?.summary ? [aiSummary.summary] : []);
+    else exportJSON({ tasks, ai_summary: aiSummary, generated: new Date().toISOString() }, name);
   };
 
   const statusBadge = {
@@ -135,13 +134,10 @@ export default function ReportsPage({ userId }) {
             <RefreshCw size={13} />
             Refresh
           </button>
-          <button
-            onClick={handleExport}
+          <ExportMenu
+            onExport={handleExport}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
-          >
-            <Download size={13} />
-            Export
-          </button>
+          />
         </div>
       </div>
 
@@ -237,4 +233,4 @@ export default function ReportsPage({ userId }) {
       </div>
     </div>
   );
-}
+}

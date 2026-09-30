@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import ExportMenu from "../components/ExportMenu";
+import { exportJSON, exportCSV, exportPDF } from "../utils/export";
 import AddTaskForm from "../components/AddTaskForm";
 import TaskList from "../components/TaskList";
 import { apiRequest } from "../utils/api";
@@ -10,6 +13,15 @@ export default function MyDones() {
   const [currentDateObj, setCurrentDateObj] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // "n" shortcut opens this page with ?new=1
+  useEffect(() => {
+    if (searchParams.get("new")) {
+      setShowAddForm(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const dateStr = localDate(currentDateObj);
 
@@ -33,9 +45,9 @@ export default function MyDones() {
     });
   };
 
-  const handleAdd = async (title) => {
+  const handleAdd = async (title, tags = []) => {
     try {
-      const newTask = await apiRequest("/tasks", "POST", { title, status: "Done", date_logged: dateStr });
+      const newTask = await apiRequest("/tasks", "POST", { title, tags, status: "Done", date_logged: dateStr });
       setTasks((prev) => [newTask, ...prev]);
       setShowAddForm(false);
     } catch (err) {
@@ -63,12 +75,11 @@ export default function MyDones() {
     }
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `mydones_${dateStr}.json`;
-    link.click();
+  const handleExport = (format) => {
+    const name = `mydones_${dateStr}`;
+    if (format === "csv") exportCSV(filteredTasks, name);
+    else if (format === "pdf") exportPDF(filteredTasks, name, `My Dones — ${dateStr}`);
+    else exportJSON(filteredTasks, name);
   };
 
   const filteredTasks =
@@ -106,13 +117,7 @@ export default function MyDones() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            <Download size={13} />
-            Export
-          </button>
+          <ExportMenu onExport={handleExport} />
           <button
             onClick={() => setShowAddForm((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
@@ -158,4 +163,4 @@ export default function MyDones() {
       </div>
     </div>
   );
-}
+}
