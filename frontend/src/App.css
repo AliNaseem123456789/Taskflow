@@ -1,0 +1,64 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+} /* Add this to your index.css or App.css */
+.custom-calendar {
+  border: none !important;
+  font-family: inherit !important;
+}
+
+.custom-calendar .react-calendar__tile {
+  padding: 1.5em 0.5em !important;
+  border-radius: 8px;
+}
+
+.custom-calendar .react-calendar__tile--active {
+  background-color: #ef4444 !important; /* Red to match your theme */
+  color: white !important;
+}
+
+.custom-calendar .react-calendar__tile--now {
+  background: #fee2e2 !important; /* Soft red for today */
+}
+
+.custom-calendar .react-calendar__tile:hover {
+  background-color: #f3f4f6 !important;
+}

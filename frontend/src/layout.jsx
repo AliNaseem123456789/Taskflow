@@ -1,0 +1,75 @@
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import { Menu } from "lucide-react";
+
+const AUTH_ROUTES = [
+  "/dashboard",
+  "/mydones",
+  "/calendar",
+  "/reminders",
+  "/reports",
+  "/search",
+  "/team",
+];
+
+const Layout = ({ children }) => {
+  const isLoggedIn = !!localStorage.getItem("token");
+  const location   = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const isAppRoute = AUTH_ROUTES.some((r) => location.pathname.startsWith(r));
+  const showSidebar = isLoggedIn && isAppRoute;
+
+  if (showSidebar) {
+    return (
+      <div className="min-h-screen flex bg-gray-50">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:block shrink-0">
+          <Sidebar />
+        </div>
+
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
+              <Sidebar onClose={() => setSidebarOpen(false)} />
+            </div>
+          </>
+        )}
+
+        {/* Main content */}
+        <div className="flex-1 min-h-screen flex flex-col min-w-0">
+          {/* Mobile header */}
+          <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="font-semibold text-gray-900 text-sm">Task Flow</span>
+          </div>
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
+      </div>
+    );
+  }
+
+  // Public layout
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Layout;
