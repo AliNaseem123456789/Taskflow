@@ -10,18 +10,16 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [showTags, setShowTags] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!token) return;
-    apiRequest("/tags", "GET", null, token)
+    apiRequest("/tags", "GET", null)
       .then(setAllTags)
       .catch(() => {});
-  }, [token]);
+  }, []);
 
   const handleCreateTag = async (name, color) => {
     try {
-      const tag = await apiRequest("/tags", "POST", { name, color }, token);
+      const tag = await apiRequest("/tags", "POST", { name, color });
       setAllTags((prev) => [...prev, tag]);
       return tag;
     } catch {
@@ -109,4 +107,4 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
       </div>
     </form>
   );
-}
+}

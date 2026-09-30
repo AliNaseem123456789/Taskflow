@@ -12,22 +12,33 @@ import {
   readRefreshCookie,
   verifyToken,
 } from "../utils/session.js";
+import { safeTz, dbDate } from "../utils/time.js";
 
-const USER_FIELDS = "id, email, name, role";
+const USER_FIELDS = "id, email, name, role, timezone";
 
 const publicUser = (user) => ({
   id: user.id,
   email: user.email,
   name: user.name,
   role: user.role,
+  timezone: user.timezone || "UTC",
 });
+
+// The browser sends its timezone on signup/login; keep the account in sync.
+const syncTimezone = async (user, timezone) => {
+  if (!timezone) return user;
+  const tz = safeTz(timezone);
+  if (tz === user.timezone) return user;
+  await supabase.from("users").update({ timezone: tz }).eq("id", user.id);
+  return { ...user, timezone: tz };
+};
 
 /* ------------------------------------------------------------------ */
 /* POST /api/auth/signup                                               */
 /* ------------------------------------------------------------------ */
 
 export const signup = async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, timezone } = req.body;
 
   if (!email || !password)
     return res.status(400).json({ error: "Email and password are required" });
@@ -51,7 +62,9 @@ export const signup = async (req, res) => {
 
     const { data: user, error } = await supabase
       .from("users")
-      .insert([{ email, password: hashedPassword, name, role: "user" }])
+      .insert([
+        { email, password: hashedPassword, name, role: "user", timezone: safeTz(timezone) },
+      ])
       .select(USER_FIELDS)
       .single();
 
@@ -85,28 +98,30 @@ export const signup = async (req, res) => {
 /* ------------------------------------------------------------------ */
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, timezone } = req.body;
 
   if (!email || !password)
     return res.status(400).json({ error: "Email and password are required" });
 
   try {
-    const { data: user } = await supabase
+    const { data: found } = await supabase
       .from("users")
-      .select("id, email, name, role, password")
+      .select(`${USER_FIELDS}, password`)
       .eq("email", email)
       .maybeSingle();
 
     // Compare against a dummy hash when the user doesn't exist so the
     // response time doesn't leak which emails are registered.
     const hash =
-      user?.password ||
+      found?.password ||
       "$2a$10$CwTycUXWue0Thq9StjUM0uJ8.6Zt1hqZ0Q8dQJ2Yb0m0P0m0P0m0P";
 
     const isValid = await bcrypt.compare(password, hash);
 
-    if (!user || !isValid)
+    if (!found || !isValid)
       return res.status(401).json({ error: "Invalid credentials" });
+
+    const user = await syncTimezone(found, timezone);
 
     const { accessToken, refreshToken, sessionId } = await createSession(
       user,
@@ -151,9 +166,15 @@ export const refresh = async (req, res) => {
       return res.status(401).json({ error: "Session not found" });
     }
 
-    // Replay of an already-rotated token: assume the token was stolen and
-    // kill every live session for this user.
+    // Replay of an already-rotated token.
     if (session.refresh_token_used) {
+      // Rotated a few seconds ago: most likely two tabs refreshed at once.
+      // The browser already has the new cookie, so just ask it to retry.
+      const rotatedAgo = Date.now() - (dbDate(session.revoked_at)?.getTime() || 0);
+      if (rotatedAgo < 30 * 1000)
+        return res.status(409).json({ error: "Token already refreshed, retry" });
+
+      // Otherwise assume the token was stolen and kill every live session.
       await revokeAllUserSessions(session.user_id, "token_reuse");
       clearRefreshCookie(res);
       return res
@@ -166,7 +187,7 @@ export const refresh = async (req, res) => {
       return res.status(401).json({ error: "Session revoked" });
     }
 
-    if (new Date(session.refresh_token_expires_at) < new Date()) {
+    if (dbDate(session.refresh_token_expires_at) < new Date()) {
       await revokeSession(session.id, "expired");
       clearRefreshCookie(res);
       return res.status(401).json({ error: "Refresh token expired" });
@@ -184,11 +205,11 @@ export const refresh = async (req, res) => {
       return res.status(401).json({ error: "User no longer exists" });
     }
 
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      sessionId,
-    } = await rotateSession(session, user, req);
+    const rotated = await rotateSession(session, user, req);
+    if (!rotated)
+      return res.status(409).json({ error: "Token already refreshed, retry" });
+
+    const { accessToken, refreshToken: newRefreshToken, sessionId } = rotated;
 
     setRefreshCookie(res, newRefreshToken);
 
@@ -204,7 +225,7 @@ export const refresh = async (req, res) => {
 };
 export const logout = async (req, res) => {
   try {
-    // Prefer the session the access token belongs to (set by `protect`),
+    // Prefer the session the access token belongs to (set by optionalAuthenticate),
     // fall back to whatever the refresh cookie points at.
     let sessionId = req.sessionId || null;
 
@@ -307,4 +328,4 @@ export const revokeSessionById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+};

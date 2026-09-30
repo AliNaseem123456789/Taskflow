@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Plus, LogIn, ThumbsUp, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { localDate, shiftDate } from "../utils/date";
 
 const STATUS_BADGE = {
   Done:    "bg-emerald-50 text-emerald-700",
@@ -105,10 +106,9 @@ function FeedTaskCard({ task, currentUserId }) {
     task.reactions?.some((r) => r.user_id === currentUserId) ?? false
   );
   const [likeCount, setLikeCount] = useState(task.reactions?.length ?? 0);
-  const token = localStorage.getItem("token");
 
   const handleReact = async () => {
-    const res = await apiRequest(`/tasks/${task.id}/react`, "POST", {}, token).catch(() => null);
+    const res = await apiRequest(`/tasks/${task.id}/react`, "POST", {}).catch(() => null);
     if (!res) return;
     setLiked(res.liked);
     setLikeCount((c) => (res.liked ? c + 1 : c - 1));
@@ -203,51 +203,47 @@ export default function TeamPage() {
   const [teams, setTeams]             = useState([]);
   const [activeTeam, setActiveTeam]   = useState(null);
   const [feed, setFeed]               = useState([]);
-  const [date, setDate]               = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate]               = useState(localDate());
   const [loading, setLoading]         = useState(true);
   const [feedLoading, setFeedLoading] = useState(false);
 
-  const token = localStorage.getItem("token");
   const currentUserId = (() => {
     try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; }
   })();
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
-    apiRequest("/teams", "GET", null, token)
+    apiRequest("/teams", "GET", null)
       .then((data) => {
         setTeams(data || []);
         if (data?.length > 0) setActiveTeam(data[0]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [token, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     if (!activeTeam) return;
     setFeedLoading(true);
-    apiRequest(`/teams/${activeTeam.id}/feed?date=${date}`, "GET", null, token)
+    apiRequest(`/teams/${activeTeam.id}/feed?date=${date}`, "GET", null)
       .then(setFeed)
       .catch(() => setFeed([]))
       .finally(() => setFeedLoading(false));
-  }, [activeTeam, date, token]);
+  }, [activeTeam, date]);
 
   const handleCreate = async (name) => {
-    const team = await apiRequest("/teams", "POST", { name }, token);
+    const team = await apiRequest("/teams", "POST", { name });
     setTeams((prev) => [...prev, team]);
     setActiveTeam(team);
   };
 
   const handleJoin = async (invite_code) => {
-    const { team } = await apiRequest("/teams/join", "POST", { invite_code }, token);
+    const { team } = await apiRequest("/teams/join", "POST", { invite_code });
     setTeams((prev) => [...prev, team]);
     setActiveTeam(team);
   };
 
   const stepDate = (dir) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + dir);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(shiftDate(date, dir));
   };
 
   if (loading) {
@@ -305,12 +301,12 @@ export default function TeamPage() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
+              max={localDate()}
               className="text-xs px-2 py-1.5 outline-none bg-transparent"
             />
             <button
               onClick={() => stepDate(1)}
-              disabled={date >= new Date().toISOString().split("T")[0]}
+              disabled={date >= localDate()}
               className="px-2 py-1.5 hover:bg-gray-50 text-gray-500 transition-colors border-l border-gray-200 disabled:opacity-30"
             >
               <ChevronRight size={14} />
@@ -341,4 +337,4 @@ export default function TeamPage() {
       )}
     </div>
   );
-}
+}

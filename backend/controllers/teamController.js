@@ -1,10 +1,7 @@
+import crypto from "node:crypto";
 import { supabase } from "../config/supabase.js";
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-});
+import { sendEmail } from "./emailController.js";
+import { todayIn, monthIn, monthRange } from "../utils/time.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -145,7 +142,7 @@ export const regenerateInvite = async (req, res) => {
   const { data: team } = await supabase.from("teams").select("owner_id").eq("id", id).single();
   if (team?.owner_id !== req.user.id) return res.status(403).json({ error: "Owner only" });
 
-  const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const newCode = crypto.randomBytes(4).toString("hex").slice(0, 6).toUpperCase();
   const { data, error } = await supabase
     .from("teams")
     .update({ invite_code: newCode })
@@ -188,12 +185,10 @@ export const getTeamFeed = async (req, res) => {
   if (date) {
     query = query.eq("date_logged", date);
   } else if (month) {
-    const [year, m] = month.split("-");
-    const lastDay = new Date(year, m, 0).getDate();
-    query = query.gte("date_logged", `${month}-01`).lte("date_logged", `${month}-${lastDay}`);
+    const range = monthRange(month);
+    query = query.gte("date_logged", range.start).lte("date_logged", range.end);
   } else {
-    const today = new Date().toISOString().split("T")[0];
-    query = query.eq("date_logged", today);
+    query = query.eq("date_logged", todayIn(req.user.timezone));
   }
 
   const { data: tasks, error } = await query.order("date_logged", { ascending: false });
@@ -233,16 +228,14 @@ export const getTeamStats = async (req, res) => {
   const memberIds = members?.map((m) => m.user_id) || [];
   if (!memberIds.includes(req.user.id)) return res.status(403).json({ error: "Not a member" });
 
-  const currentMonth = month || new Date().toISOString().substring(0, 7);
-  const [year, m] = currentMonth.split("-");
-  const lastDay = new Date(year, m, 0).getDate();
+  const range = monthRange(month || monthIn(req.user.timezone));
 
   const { data: tasks } = await supabase
     .from("tasks")
     .select("user_id, status, date_logged")
     .in("user_id", memberIds)
-    .gte("date_logged", `${currentMonth}-01`)
-    .lte("date_logged", `${currentMonth}-${lastDay}`);
+    .gte("date_logged", range.start)
+    .lte("date_logged", range.end);
 
   const stats = members.map((mem) => {
     const userTasks = tasks?.filter((t) => t.user_id === mem.user_id) || [];
@@ -278,7 +271,7 @@ export const sendTeamDigest = async (req, res) => {
     .eq("team_id", id);
 
   const memberIds = members.map((m) => m.user_id);
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIn(req.user.timezone);
 
   const { data: tasks } = await supabase
     .from("tasks")
@@ -301,17 +294,8 @@ export const sendTeamDigest = async (req, res) => {
   const body = `Team digest for ${team.name} — ${today}\n\n${lines.join("\n\n")}\n\n— MyDones Team`;
 
   for (const mem of members) {
-    try {
-      await transporter.sendMail({
-        from: `"MyDones" <${process.env.EMAIL_USER}>`,
-        to: mem.users.email,
-        subject: `[${team.name}] Daily digest — ${today}`,
-        text: body,
-      });
-    } catch (e) {
-      console.error(`Digest send failed for ${mem.users.email}:`, e.message);
-    }
+    await sendEmail(mem.users.email, `[${team.name}] Daily digest — ${today}`, body);
   }
 
   res.json({ success: true });
-};
+};

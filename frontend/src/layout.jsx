@@ -4,7 +4,9 @@ import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { Menu } from "lucide-react";
+import { isLoggedIn } from "./api/api";
 
+// Pages that need a login and show the sidebar
 const AUTH_ROUTES = [
   "/dashboard",
   "/mydones",
@@ -13,15 +15,15 @@ const AUTH_ROUTES = [
   "/reports",
   "/search",
   "/team",
+  "/profile",
 ];
 
 const Layout = ({ children }) => {
-  const isLoggedIn = !!localStorage.getItem("token");
   const location   = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isAppRoute = AUTH_ROUTES.some((r) => location.pathname.startsWith(r));
-  const showSidebar = isLoggedIn && isAppRoute;
+  const isAppRoute = AUTH_ROUTES.some((r) => location.pathname.toLowerCase().startsWith(r));
+  const showSidebar = isLoggedIn() && isAppRoute;
 
   if (showSidebar) {
     return (

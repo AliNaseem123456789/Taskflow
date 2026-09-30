@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Download, RefreshCw, Sparkles } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import api from "../api/api";
+import { localDate } from "../utils/date";
+
+// Optional external AI service (set VITE_AI_API_URL in frontend/.env)
+const AI_API_URL = import.meta.env.VITE_AI_API_URL;
 
 export default function ReportsPage({ userId }) {
   const [tasks, setTasks] = useState([]);
@@ -18,11 +23,6 @@ export default function ReportsPage({ userId }) {
         const d = JSON.parse(user);
         return d.id || d.user_id;
       }
-      const token = localStorage.getItem("token");
-      if (token) {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        return payload.sub || payload.user_id || payload.id;
-      }
     } catch {}
     return null;
   }, [userId]);
@@ -36,7 +36,7 @@ export default function ReportsPage({ userId }) {
       let url = `/tasks?user_id=${uid}`;
       if (dateRange.startDate) url += `&start_date=${dateRange.startDate}`;
       if (dateRange.endDate) url += `&end_date=${dateRange.endDate}`;
-      const data = await apiRequest(url, "GET", null, localStorage.getItem("token"));
+      const data = await apiRequest(url, "GET", null);
       setTasks(data || []);
     } catch {
       setError("Failed to load tasks.");
@@ -50,20 +50,13 @@ export default function ReportsPage({ userId }) {
     if (!uid || !tasks.length) return;
     try {
       setSummaryLoading(true);
-      const res = await fetch("https://idonethis-1.onrender.com/api/ai-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          user_id: uid,
-          start_date: dateRange.startDate,
-          end_date: dateRange.endDate,
-        }),
+      if (!AI_API_URL) throw new Error("No AI service configured");
+      const { data } = await api.post(`${AI_API_URL}/api/ai-summary`, {
+        user_id: uid,
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setAiSummary(await res.json());
+      setAiSummary(data);
     } catch {
       // Fallback
       const dones = tasks.filter((t) => t.status === "Done");
@@ -108,7 +101,7 @@ export default function ReportsPage({ userId }) {
     );
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `report-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `report-${localDate()}.json`;
     a.click();
   };
 
@@ -244,4 +237,4 @@ export default function ReportsPage({ userId }) {
       </div>
     </div>
   );
-}
+}

@@ -13,12 +13,11 @@ function CommentPanel({ taskId }) {
   const [comments, setComments]   = useState(null);
   const [input, setInput]         = useState("");
   const [loading, setLoading]     = useState(false);
-  const token = localStorage.getItem("token");
   const userId = (() => { try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; } })();
 
   const load = async () => {
     if (comments !== null) return;
-    const data = await apiRequest(`/tasks/${taskId}/comments`, "GET", null, token).catch(() => []);
+    const data = await apiRequest(`/tasks/${taskId}/comments`, "GET", null).catch(() => []);
     setComments(data);
   };
 
@@ -26,14 +25,14 @@ function CommentPanel({ taskId }) {
     e.preventDefault();
     if (!input.trim()) return;
     setLoading(true);
-    const c = await apiRequest(`/tasks/${taskId}/comments`, "POST", { content: input }, token).catch(() => null);
+    const c = await apiRequest(`/tasks/${taskId}/comments`, "POST", { content: input }).catch(() => null);
     if (c) setComments((prev) => [...(prev || []), c]);
     setInput("");
     setLoading(false);
   };
 
   const remove = async (cId) => {
-    await apiRequest(`/tasks/comments/${cId}`, "DELETE", null, token).catch(() => {});
+    await apiRequest(`/tasks/comments/${cId}`, "DELETE", null).catch(() => {});
     setComments((prev) => prev.filter((c) => c.id !== cId));
   };
 
@@ -87,7 +86,6 @@ function TaskRow({ task, onStatusChange, onDelete }) {
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(task.reactions?.length ?? 0);
-  const token = localStorage.getItem("token");
   const userId = (() => { try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; } })();
 
   // Initialise liked state from reactions
@@ -96,7 +94,7 @@ function TaskRow({ task, onStatusChange, onDelete }) {
   });
 
   const handleReact = async () => {
-    const res = await apiRequest(`/tasks/${task.id}/react`, "POST", {}, token).catch(() => null);
+    const res = await apiRequest(`/tasks/${task.id}/react`, "POST", {}).catch(() => null);
     if (!res) return;
     setLiked(res.liked);
     setLikeCount((c) => (res.liked ? c + 1 : c - 1));
@@ -210,4 +208,4 @@ export default function TaskList({ tasks, onStatusChange, onDelete }) {
       ))}
     </ul>
   );
-}
+}

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 
+// Optional external AI service (set VITE_AI_API_URL in frontend/.env)
+const AI_API_URL = import.meta.env.VITE_AI_API_URL;
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -24,7 +27,8 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://idonethis-1.onrender.com/api/chat", {
+      if (!AI_API_URL) throw new Error("No AI service configured");
+      const res = await fetch(`${AI_API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
@@ -111,4 +115,4 @@ export default function Chatbot() {
       </div>
     </div>
   );
-}
+}

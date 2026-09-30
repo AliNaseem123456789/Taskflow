@@ -18,8 +18,7 @@ export default function DayModal({ isOpen, date, onClose }) {
         const data = await apiRequest(
           `/tasks?date=${dateKey}`,
           "GET",
-          null,
-          localStorage.getItem("token")
+          null
         );
         setTasks(data || []);
       } catch {
@@ -36,8 +35,7 @@ export default function DayModal({ isOpen, date, onClose }) {
       const updated = await apiRequest(
         `/tasks/${taskId}`,
         "PUT",
-        { status: newStatus },
-        localStorage.getItem("token")
+        { status: newStatus }
       );
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (err) {
@@ -48,7 +46,7 @@ export default function DayModal({ isOpen, date, onClose }) {
   const deleteTask = async (taskId) => {
     if (!confirm("Delete this task?")) return;
     try {
-      await apiRequest(`/tasks/${taskId}`, "DELETE", null, localStorage.getItem("token"));
+      await apiRequest(`/tasks/${taskId}`, "DELETE", null);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
     } catch (err) {
       console.error("Delete error:", err);
@@ -134,4 +132,4 @@ export default function DayModal({ isOpen, date, onClose }) {
       </div>
     </div>
   );
-}
+}

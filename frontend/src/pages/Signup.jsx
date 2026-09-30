@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import api from "../api/api";
-import { setAccessToken } from "../api/api";
+import api, { saveLogin, browserTimezone } from "../api/api";
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,10 +19,10 @@ export default function Signup() {
         name,
         email,
         password,
-        role: "user",
+        timezone: browserTimezone(),
       });
-     setAccessToken(res.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      saveLogin(res.data);
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err.response?.data?.error || "Signup failed. Please try again.");
     } finally {
@@ -110,4 +109,4 @@ export default function Signup() {
       </div>
     </div>
   );
-}
+}

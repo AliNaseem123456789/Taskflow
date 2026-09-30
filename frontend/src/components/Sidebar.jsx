@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { logout, getStoredUser } from "../api/api";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -6,6 +7,7 @@ import {
   Bell,
   BarChart3,
   LogOut,
+  UserCircle,
   User,
   X,
   Users,
@@ -20,21 +22,16 @@ const navItems = [
   { icon: Users,           label: "Team",       path: "/team"      },
   { icon: Bell,            label: "Reminders",  path: "/reminders" },
   { icon: BarChart3,       label: "Reports",    path: "/reports"   },
+  { icon: UserCircle,      label: "Profile",    path: "/profile"   },
 ];
 
 export default function Sidebar({ onClose }) {
   const navigate  = useNavigate();
   const location  = useLocation();
 
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
-  })();
+  const user = getStoredUser();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  const handleLogout = () => logout();
 
   const handleNav = (path) => {
     navigate(path);
@@ -106,4 +103,4 @@ export default function Sidebar({ onClose }) {
       </div>
     </div>
   );
-}
+}

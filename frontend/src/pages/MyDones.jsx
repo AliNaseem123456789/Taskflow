@@ -3,28 +3,27 @@ import { ChevronLeft, ChevronRight, Plus, Download } from "lucide-react";
 import AddTaskForm from "../components/AddTaskForm";
 import TaskList from "../components/TaskList";
 import { apiRequest } from "../utils/api";
+import { localDate } from "../utils/date";
 
 export default function MyDones() {
   const [tasks, setTasks] = useState([]);
   const [currentDateObj, setCurrentDateObj] = useState(new Date());
-  const [token] = useState(localStorage.getItem("token"));
   const [statusFilter, setStatusFilter] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const dateStr = currentDateObj.toISOString().split("T")[0];
+  const dateStr = localDate(currentDateObj);
 
   useEffect(() => {
-    if (!token) return;
     const fetchTasks = async () => {
       try {
-        const data = await apiRequest(`/tasks?date=${dateStr}`, "GET", null, token);
+        const data = await apiRequest(`/tasks?date=${dateStr}`, "GET", null);
         setTasks(data);
       } catch (err) {
         console.error("Fetch tasks failed:", err.message);
       }
     };
     fetchTasks();
-  }, [dateStr, token]);
+  }, [dateStr]);
 
   const changeDate = (days) => {
     setCurrentDateObj((prev) => {
@@ -36,7 +35,7 @@ export default function MyDones() {
 
   const handleAdd = async (title) => {
     try {
-      const newTask = await apiRequest("/tasks", "POST", { title, status: "Done" }, token);
+      const newTask = await apiRequest("/tasks", "POST", { title, status: "Done", date_logged: dateStr });
       setTasks((prev) => [newTask, ...prev]);
       setShowAddForm(false);
     } catch (err) {
@@ -46,7 +45,7 @@ export default function MyDones() {
 
   const handleStatusChange = async (id, status) => {
     try {
-      const updated = await apiRequest(`/tasks/${id}`, "PUT", { status }, token);
+      const updated = await apiRequest(`/tasks/${id}`, "PUT", { status });
       setTasks((prev) =>
         prev.map((t) => (t.id === id ? { ...t, status: updated.status } : t))
       );
@@ -57,7 +56,7 @@ export default function MyDones() {
 
   const handleDelete = async (id) => {
     try {
-      await apiRequest(`/tasks/${id}`, "DELETE", null, token);
+      await apiRequest(`/tasks/${id}`, "DELETE", null);
       setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       console.error("Failed to delete:", err.message);
@@ -159,4 +158,4 @@ export default function MyDones() {
       </div>
     </div>
   );
-}
+}

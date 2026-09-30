@@ -1,5 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./layout";
+import RequireAuth from "./components/RequireAuth";
+import { isLoggedIn } from "./api/api";
 
 // Public
 import LandingPage    from "./pages/LandingPage";
@@ -24,6 +26,23 @@ import SearchPage  from "./pages/SearchPage";
 import TeamPage    from "./pages/TeamPage";
 import TeamManage  from "./pages/TeamManage";
 
+// Logged-in pages
+const appRoutes = [
+  ["/dashboard",       <Dashboard />],
+  ["/mydones",         <MyDones />],
+  ["/calendar",        <Calender />],
+  ["/reminders",       <Reminders />],
+  ["/reports",         <ReportsPage />],
+  ["/search",          <SearchPage />],
+  ["/team",            <TeamPage />],
+  ["/team/manage/:id", <TeamManage />],
+  ["/profile",         <Profile />],
+];
+
+// Send logged-in users away from login/signup
+const GuestOnly = ({ children }) =>
+  isLoggedIn() ? <Navigate to="/dashboard" replace /> : children;
+
 export default function App() {
   return (
     <Router>
@@ -31,8 +50,8 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/"                  element={<LandingPage />} />
-          <Route path="/login"             element={<Login />} />
-          <Route path="/signup"            element={<Signup />} />
+          <Route path="/login"             element={<GuestOnly><Login /></GuestOnly>} />
+          <Route path="/signup"            element={<GuestOnly><Signup /></GuestOnly>} />
           <Route path="/how-it-works"      element={<HowItWorks />} />
           <Route path="/pricing"           element={<Pricing />} />
           <Route path="/case-studies"      element={<SuccessStories />} />
@@ -40,23 +59,19 @@ export default function App() {
           <Route path="/privacy-policy"    element={<PrivacyPolicy />} />
           <Route path="/terms-of-service"  element={<TermsOfService />} />
 
-          {/* App */}
-          <Route path="/dashboard"         element={<Dashboard />} />
-          <Route path="/mydones"           element={<MyDones />} />
-          <Route path="/calendar"          element={<Calender />} />
-          <Route path="/reminders"         element={<Reminders />} />
-          <Route path="/reports"           element={<ReportsPage />} />
-          <Route path="/search"            element={<SearchPage />} />
-          <Route path="/team"              element={<TeamPage />} />
-          <Route path="/team/manage/:id"   element={<TeamManage />} />
+          {/* App (login required) */}
+          {appRoutes.map(([path, element]) => (
+            <Route key={path} path={path} element={<RequireAuth>{element}</RequireAuth>} />
+          ))}
 
-          <Route path="/profile" element={<Profile/>}/>
-          {/* Legacy redirects */}
-          <Route path="/Reminders"         element={<Reminders />} />
-          <Route path="/How It works"      element={<HowItWorks />} />
-          <Route path="/PrivacyPolicy"     element={<PrivacyPolicy />} />
-          <Route path="/Productivity-Guide" element={<ProductivityGuide />} />
-          <Route path="/Reports"           element={<ReportsPage />} />
+          {/* Legacy URLs */}
+          <Route path="/Reminders"          element={<Navigate to="/reminders" replace />} />
+          <Route path="/How It works"       element={<Navigate to="/how-it-works" replace />} />
+          <Route path="/PrivacyPolicy"      element={<Navigate to="/privacy-policy" replace />} />
+          <Route path="/Productivity-Guide" element={<Navigate to="/productivity-guide" replace />} />
+          <Route path="/Reports"            element={<Navigate to="/reports" replace />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </Router>

@@ -5,6 +5,7 @@ import {
   ArrowLeft, Mail, ChevronDown
 } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { localMonth } from "../utils/date";
 
 const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -70,11 +71,10 @@ export default function TeamManage() {
   const [stats, setStats]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [tab, setTab]             = useState("members"); // members | stats
-  const [statsMonth, setStatsMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [statsMonth, setStatsMonth] = useState(localMonth());
   const [digestSent, setDigestSent] = useState(false);
   const [sending, setSending]     = useState(false);
 
-  const token = localStorage.getItem("token");
   const currentUserId = (() => {
     try { return JSON.parse(localStorage.getItem("user"))?.id; } catch { return null; }
   })();
@@ -83,17 +83,16 @@ export default function TeamManage() {
   const myRole  = team?.my_role;
 
   const fetchTeam = () =>
-    apiRequest(`/teams/${id}`, "GET", null, token).then(setTeam).catch(() => navigate("/team"));
+    apiRequest(`/teams/${id}`, "GET", null).then(setTeam).catch(() => navigate("/team"));
 
   const fetchStats = (month = statsMonth) =>
-    apiRequest(`/teams/${id}/stats?month=${month}`, "GET", null, token)
+    apiRequest(`/teams/${id}/stats?month=${month}`, "GET", null)
       .then(setStats)
       .catch(() => {});
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
     Promise.all([fetchTeam(), fetchStats()]).finally(() => setLoading(false));
-  }, [id, token]);
+  }, [id]);
 
   useEffect(() => {
     if (tab === "stats") fetchStats(statsMonth);
@@ -101,12 +100,12 @@ export default function TeamManage() {
 
   const handleRemoveMember = async (userId) => {
     if (!window.confirm("Remove this member?")) return;
-    await apiRequest(`/teams/${id}/members/${userId}`, "DELETE", null, token).catch(() => {});
+    await apiRequest(`/teams/${id}/members/${userId}`, "DELETE", null).catch(() => {});
     setTeam((t) => ({ ...t, members: t.members.filter((m) => m.id !== userId) }));
   };
 
   const handleRoleChange = async (userId, role) => {
-    await apiRequest(`/teams/${id}/members/${userId}/role`, "PUT", { role }, token).catch(() => {});
+    await apiRequest(`/teams/${id}/members/${userId}/role`, "PUT", { role }).catch(() => {});
     setTeam((t) => ({
       ...t,
       members: t.members.map((m) => (m.id === userId ? { ...m, role } : m)),
@@ -115,25 +114,25 @@ export default function TeamManage() {
 
   const handleRegenerate = async () => {
     if (!window.confirm("Generate a new invite code? The old one will stop working.")) return;
-    const updated = await apiRequest(`/teams/${id}/regenerate-invite`, "POST", {}, token).catch(() => null);
+    const updated = await apiRequest(`/teams/${id}/regenerate-invite`, "POST", {}).catch(() => null);
     if (updated) setTeam((t) => ({ ...t, invite_code: updated.invite_code }));
   };
 
   const handleLeave = async () => {
     if (!window.confirm("Leave this team?")) return;
-    await apiRequest(`/teams/${id}/leave`, "POST", {}, token).catch(() => {});
+    await apiRequest(`/teams/${id}/leave`, "POST", {}).catch(() => {});
     navigate("/team");
   };
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this team? This cannot be undone.")) return;
-    await apiRequest(`/teams/${id}`, "DELETE", null, token).catch(() => {});
+    await apiRequest(`/teams/${id}`, "DELETE", null).catch(() => {});
     navigate("/team");
   };
 
   const sendDigest = async () => {
     setSending(true);
-    await apiRequest(`/teams/${id}/digest`, "POST", {}, token).catch(() => {});
+    await apiRequest(`/teams/${id}/digest`, "POST", {}).catch(() => {});
     setSending(false);
     setDigestSent(true);
     setTimeout(() => setDigestSent(false), 3000);
@@ -288,7 +287,7 @@ export default function TeamManage() {
               type="month"
               value={statsMonth}
               onChange={(e) => setStatsMonth(e.target.value)}
-              max={new Date().toISOString().substring(0, 7)}
+              max={localMonth()}
               className="text-xs border border-gray-200 rounded-md px-2.5 py-1.5 outline-none"
             />
           </div>
@@ -323,4 +322,4 @@ export default function TeamManage() {
       </div>
     </div>
   );
-}
+}

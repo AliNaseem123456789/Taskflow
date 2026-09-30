@@ -1,4 +1,5 @@
 import { supabase } from "../config/supabase.js";
+import { todayIn, dayNumber, monthRange } from "../utils/time.js";
 
 // Full select with tags + reactions
 const TASK_SELECT = "*, task_tags(tags(id, name, color)), task_reactions(user_id, emoji)";
@@ -25,11 +26,8 @@ export const getTasks = async (req, res) => {
     if (date) {
       query = query.eq("date_logged", date);
     } else if (month) {
-      const [year, monthNum] = month.split("-");
-      const lastDay = new Date(year, monthNum, 0).getDate();
-      query = query
-        .gte("date_logged", `${month}-01`)
-        .lte("date_logged", `${month}-${lastDay}`);
+      const range = monthRange(month);
+      query = query.gte("date_logged", range.start).lte("date_logged", range.end);
     } else if (start && end) {
       query = query.gte("date_logged", start).lte("date_logged", end);
     }
@@ -73,18 +71,19 @@ export const getStreak = async (req, res) => {
       .order("date_logged", { ascending: false });
     if (error) throw error;
 
+    // Count back from today (in the user's timezone). A streak survives
+    // until the end of today even if nothing has been logged yet today.
     const dates = [...new Set(data.map((t) => t.date_logged))].sort().reverse();
     let streak = 0;
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
-    let expected = new Date(cursor);
+    let expected = dayNumber(todayIn(req.user.timezone));
 
     for (const dateStr of dates) {
-      const d = new Date(dateStr + "T00:00:00");
-      const diff = Math.round((expected - d) / (1000 * 60 * 60 * 24));
+      const day = dayNumber(dateStr);
+      const diff = expected - day;
+      if (diff < 0) continue; // future-dated task
       if (diff <= 1) {
         streak++;
-        expected = d;
+        expected = day;
       } else {
         break;
       }
@@ -108,7 +107,7 @@ export const addTask = async (req, res) => {
         title,
         description,
         status,
-        date_logged: date_logged || new Date().toISOString().split("T")[0],
+        date_logged: date_logged || todayIn(req.user.timezone),
       }])
       .select("*")
       .single();
@@ -181,4 +180,4 @@ export const deleteTask = async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-};
+};

@@ -23,7 +23,6 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const token = localStorage.getItem("token");
   const debouncedQ = useDebounce(query, 300);
 
   useEffect(() => {
@@ -35,8 +34,7 @@ export default function SearchPage() {
         const data = await apiRequest(
           `/tasks/search?q=${encodeURIComponent(debouncedQ)}`,
           "GET",
-          null,
-          token
+          null
         );
         setResults(data || []);
         setSearched(true);
@@ -47,7 +45,7 @@ export default function SearchPage() {
       }
     };
     run();
-  }, [debouncedQ, token]);
+  }, [debouncedQ]);
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl">
@@ -148,4 +146,4 @@ export default function SearchPage() {
       )}
     </div>
   );
-}
+}

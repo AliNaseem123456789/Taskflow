@@ -1,11 +1,12 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { localDate } from "../utils/date";
 
 export default function CustomCalendar({ currentDate, tasks, onDateClick, onPrev, onNext }) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDate();
 
   const paddingDays = Array(firstDay).fill(null);
   const monthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -110,4 +111,4 @@ export default function CustomCalendar({ currentDate, tasks, onDateClick, onPrev
       </div>
     </div>
   );
-}
+}

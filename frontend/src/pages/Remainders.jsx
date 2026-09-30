@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiRequest } from "../utils/api";
 import {
   Checkbox,
   FormControlLabel,
@@ -28,15 +28,10 @@ export default function Remainders() {
   const [notifyLowActivity, setNotifyLowActivity] = useState(true);
   const [notifyTaskAssigned, setNotifyTaskAssigned] = useState(true);
   const [loading, setLoading] = useState(false);
-  // const API_URL = "https://idonethis.onrender.com/email";
-  const API_URL = "http://localhost:5000/email";
   useEffect(() => {
     const fetchReminders = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const { data } = await axios.get(`${API_URL}/my-reminders`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const data = await apiRequest("/email/my-reminders");
 
         const reminder = data.find((r) => r.type === "reminder");
         const digest = data.find((r) => r.type === "digest");
@@ -92,7 +87,6 @@ export default function Remainders() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
       const formatTime = (t) => `${t.hour}:${t.minute} ${t.period}`;
 
@@ -114,9 +108,7 @@ export default function Remainders() {
       ];
 
       for (const p of payloads) {
-        await axios.post(`${API_URL}/set-reminder`, p, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiRequest("/email/set-reminder", "POST", p);
       }
 
       alert("Reminder and Digest settings saved successfully!");

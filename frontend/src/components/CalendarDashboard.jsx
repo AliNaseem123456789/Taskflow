@@ -20,8 +20,7 @@ export default function CalendarDashboard() {
       const data = await apiRequest(
         `/tasks?month=${month}`,
         "GET",
-        null,
-        localStorage.getItem("token")
+        null
       );
       setMonthTasks(data || []);
     } catch (err) {
@@ -128,4 +127,4 @@ export default function CalendarDashboard() {
       />
     </div>
   );
-}
+}

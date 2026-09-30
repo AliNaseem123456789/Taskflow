@@ -3,10 +3,10 @@ import api, { BASE_URL } from "../api/api";
 export const API_BASE = BASE_URL;
 
 /**
- * Legacy signature kept so existing call sites don't change.
- * `token` is ignored — the axios instance attaches it and refreshes on 401.
+ * Small wrapper so pages can call apiRequest("/tasks", "POST", body).
+ * The axios instance attaches the access token and refreshes it on 401.
  */
-export async function apiRequest(endpoint, method = "GET", body = null, _token) {
+export async function apiRequest(endpoint, method = "GET", body = null) {
   try {
     const res = await api.request({
       url: endpoint,

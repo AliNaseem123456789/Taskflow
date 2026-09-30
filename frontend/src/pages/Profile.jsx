@@ -9,7 +9,7 @@ import {
   MapPin,
   Loader2,
 } from "lucide-react";
-import api, { setAccessToken } from "../api/api";
+import api, { setAccessToken, logout } from "../api/api";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
@@ -171,16 +171,7 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      // revoke it locally regardless — a failed call shouldn't strand the user
-    } finally {
-      clearLocalAuth();
-      navigate("/login");
-    }
-  };
+  const handleLogout = () => logout();
 
   /* ---------------------------------------------------------------- */
 
@@ -395,4 +386,4 @@ export default function Profile() {
       </div>
     </div>
   );
-}
+}

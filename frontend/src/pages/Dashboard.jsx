@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckSquare, Clock, AlertTriangle, TrendingUp, Flame } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { localMonth } from "../utils/date";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -10,19 +11,16 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
 
     const fetchAll = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
-        const month = today.substring(0, 7);
+        const month = localMonth();
 
         const [tasks, streakData] = await Promise.all([
-          apiRequest(`/tasks?month=${month}`, "GET", null, token),
-          apiRequest("/tasks/streak", "GET", null, token).catch(() => ({ streak: 0 })),
+          apiRequest(`/tasks?month=${month}`, "GET", null),
+          apiRequest("/tasks/streak", "GET", null).catch(() => ({ streak: 0 })),
         ]);
 
         setStreak(streakData.streak || 0);
@@ -45,7 +43,7 @@ export default function Dashboard() {
     };
 
     fetchAll();
-  }, [token, navigate]);
+  }, [navigate]);
 
   const statCards = [
     { label: "Completed",   value: stats.done,    icon: CheckSquare,  color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -183,4 +181,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+}

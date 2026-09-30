@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import api from "../api/api";
-import { setAccessToken } from "../api/api";
+import api, { saveLogin, browserTimezone } from "../api/api";
 export default function Login() {
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,10 +15,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
-   setAccessToken(res.data.accessToken);
-localStorage.setItem("user", JSON.stringify(res.data.user));
-      window.location.href = "/dashboard";
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+        timezone: browserTimezone(),
+      });
+      saveLogin(res.data);
+      window.location.href = location.state?.from || "/dashboard";
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
     } finally {
@@ -99,4 +102,4 @@ localStorage.setItem("user", JSON.stringify(res.data.user));
       </div>
     </div>
   );
-}
+}

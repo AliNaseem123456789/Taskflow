@@ -3,10 +3,14 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { supabase } from "../config/supabase.js";
 import dotenv from "dotenv";
+import { dbDate } from "./time.js";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is missing. Add it to backend/.env");
+}
 
 export const ACCESS_TTL = "15m";
 export const REFRESH_TTL = "7d";
@@ -25,16 +29,23 @@ export const hashToken = (token) =>
 
 const iso = (ms) => new Date(ms).toISOString();
 
+const tokenPayload = (user) => ({
+  id: user.id,
+  email: user.email,
+  role: user.role,
+  timezone: user.timezone || "UTC",
+});
+
 const signAccessToken = (user, jti) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: user.role, jti, type: "access" },
+    { ...tokenPayload(user), jti, type: "access" },
     JWT_SECRET,
     { expiresIn: ACCESS_TTL }
   );
 
 const signRefreshToken = (user, jti) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: user.role, jti, type: "refresh" },
+    { ...tokenPayload(user), jti, type: "refresh" },
     JWT_SECRET,
     { expiresIn: REFRESH_TTL }
   );
@@ -105,7 +116,7 @@ export const findSessionByRefreshToken = async (refreshToken) => {
 export const findSessionByJti = async (jti) => {
   const { data, error } = await supabase
     .from("sessions")
-    .select("id, user_id, is_active, access_token_expires_at")
+    .select("id, user_id, is_active, access_token_expires_at, last_accessed_at")
     .eq("access_token_jti", jti)
     .maybeSingle();
 
@@ -159,9 +170,10 @@ export const revokeAllUserSessions = async (
  * Retire the old session and issue a new one.
  * The old row is kept (refresh_token_used = true) so a replay of the old
  * token is detectable rather than just unknown.
+ * Returns null if another request already rotated this session.
  */
 export const rotateSession = async (oldSession, user, req) => {
-  const { error } = await supabase
+  const { data: retired, error } = await supabase
     .from("sessions")
     .update({
       refresh_token_used: true,
@@ -170,12 +182,19 @@ export const rotateSession = async (oldSession, user, req) => {
       revocation_reason: "rotated",
     })
     .eq("id", oldSession.id)
-    .eq("refresh_token_used", false); // guard: lose the race, rotate nothing
+    .eq("refresh_token_used", false) // guard: lose the race, rotate nothing
+    .select("id");
 
   if (error) throw error;
+  if (!retired?.length) return null;
 
   return createSession(user, req);
 };
+
+// true if the session hasn't been touched in the last minute
+export const sessionNeedsTouch = (session) =>
+  !session.last_accessed_at ||
+  Date.now() - dbDate(session.last_accessed_at).getTime() > 60 * 1000;
 
 export const touchSession = async (sessionId) => {
   await supabase
@@ -208,4 +227,4 @@ export const clearRefreshCookie = (res) => {
 };
 
 export const readRefreshCookie = (req) =>
-  req.cookies?.[COOKIE_NAME] || req.body?.refreshToken || null;
+  req.cookies?.[COOKIE_NAME] || req.body?.refreshToken || null;
