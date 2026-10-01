@@ -8,6 +8,67 @@ import CompanyStructure from "../components/CompanyStructure";
 import OrgChart from "../components/OrgChart";
 import CompanyInvites from "../components/CompanyInvites";
 import OnboardingChecklists from "../components/OnboardingChecklists";
+import CompanyMoves from "../components/CompanyMoves";
+
+// Before someone goes: show their open work and who should take it over
+function HandOver({ company, person, members, onDone, onCancel }) {
+  const [work, setWork] = useState(null);
+  const [to, setTo] = useState("");
+  const [error, setError] = useState("");
+  const leaving = person.id === getStoredUser()?.id;
+
+  useEffect(() => {
+    apiRequest(`/companies/${company.id}/members/${person.id}/open-work`).then(setWork).catch(() => setWork({ tasks: [], reviewing: 0 }));
+  }, [company.id, person.id]);
+
+  const go = async () => {
+    setError("");
+    try {
+      const body = { reassign_to: to || null };
+      if (leaving) await apiRequest(`/companies/${company.id}/leave`, "POST", body);
+      else await apiRequest(`/companies/${company.id}/members/${person.id}`, "DELETE", body);
+      onDone();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const open = work?.tasks.length || 0;
+  return (
+    <div className="bg-white border border-rose-200 rounded-lg p-4 space-y-3">
+      <p className="text-sm font-semibold text-gray-900">{leaving ? `Leave ${company.name}` : `Remove ${person.name || person.email}`}</p>
+      {!work ? (
+        <p className="text-xs text-gray-400">Checking open work…</p>
+      ) : open || work.reviewing ? (
+        <>
+          <p className="text-sm text-gray-600">
+            {leaving ? "You have" : "They have"} {open} open {open === 1 ? "task" : "tasks"}
+            {work.reviewing > 0 && <> and {work.reviewing} to review</>}.
+          </p>
+          {open > 0 && (
+            <ul className="text-xs text-gray-500 max-h-32 overflow-y-auto list-disc pl-5">
+              {work.tasks.slice(0, 20).map((t) => <li key={t.id}>{t.title}{t.team_name && <> · {t.team_name}</>}{t.due_date && <> · due {t.due_date}</>}</li>)}
+            </ul>
+          )}
+          <select className={`${inputCls} w-full`} value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="">Leave them assigned (marked "former member")</option>
+            {members.filter((m) => m.id !== person.id && m.status === "active" && !["guest", "viewer"].includes(m.role)).map((m) => (
+              <option key={m.id} value={m.id}>Hand over to {m.name || m.email}</option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <p className="text-sm text-gray-600">No open work to hand over.</p>
+      )}
+      <p className="text-xs text-gray-400">Finished tasks stay under {leaving ? "your" : "their"} name. Personal dones are never touched.</p>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button onClick={go} className="px-3 py-1.5 bg-rose-600 text-white text-sm rounded-md">{leaving ? "Leave company" : "Remove"}</button>
+        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
+      </div>
+    </div>
+  );
+}
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 const ROLES = ["admin", "manager", "member", "guest", "viewer"];
@@ -89,6 +150,7 @@ function Members({ company }) {
   const [departments, setDepartments] = useState([]);
   const [query, setQuery] = useState("");
   const [showFormer, setShowFormer] = useState(false);
+  const [removing, setRemoving] = useState(null);
   const [error, setError] = useState("");
   const isAdmin = ["owner", "admin"].includes(company.my_role);
   const canLabel = isAdmin || company.my_role === "manager";
@@ -115,15 +177,7 @@ function Members({ company }) {
     }
   };
 
-  const remove = async (m) => {
-    if (!window.confirm(`Remove ${m.name || m.email} from ${company.name}? Their tasks stay, marked as a former member.`)) return;
-    try {
-      await apiRequest(`/companies/${company.id}/members/${m.id}`, "DELETE");
-      load();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  const remove = (m) => setRemoving(m);
 
   if (error && !members) return <p className="text-sm text-gray-500">{error}</p>;
   if (!members) return <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />;
@@ -151,6 +205,12 @@ function Members({ company }) {
         <span className="text-xs text-gray-400">{shown.length} people</span>
       </div>
       {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+      {removing && (
+        <div className="mb-3">
+          <HandOver company={company} person={removing} members={members}
+            onDone={() => { setRemoving(null); load(); }} onCancel={() => setRemoving(null)} />
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
         {shown.map((m) => {
@@ -277,18 +337,35 @@ const ACTION_LABELS = {
   "onboarding.assigned": "gave someone an onboarding checklist",
   "project.member_added": "added someone to a project",
   "project.member_removed": "removed someone from a project",
+  "project.columns_changed": "changed a project's columns",
+  "transfer.requested": "asked for a team move",
+  "transfer.approved": "approved a team move",
+  "transfer.rejected": "declined a team move",
+  "transfer.cancelled": "cancelled a team move",
+  "member.transferred": "moved someone to another team",
+  "announcement.posted": "posted an announcement",
 };
 
 function Audit({ company }) {
   const [rows, setRows] = useState(null);
+  const [filter, setFilter] = useState("");
   useEffect(() => {
     apiRequest(`/companies/${company.id}/audit`).then(setRows).catch(() => setRows([]));
   }, [company.id]);
   if (!rows) return <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />;
+  const kinds = [...new Set(rows.map((r) => r.action.split(".")[0]))].sort();
+  const shown = filter ? rows.filter((r) => r.action.startsWith(`${filter}.`)) : rows;
   return (
+    <div>
+    {kinds.length > 1 && (
+      <select className={`${inputCls} mb-3`} value={filter} onChange={(e) => setFilter(e.target.value)}>
+        <option value="">Everything</option>
+        {kinds.map((k) => <option key={k} value={k}>{k.replace("_", " ")}</option>)}
+      </select>
+    )}
     <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
-      {rows.length === 0 && <p className="p-6 text-sm text-gray-400 text-center">Nothing recorded yet.</p>}
-      {rows.map((r) => (
+      {shown.length === 0 && <p className="p-6 text-sm text-gray-400 text-center">Nothing recorded yet.</p>}
+      {shown.map((r) => (
         <div key={r.id} className="px-4 py-2.5 flex items-start justify-between gap-4 text-sm">
           <div>
             <span className="font-medium text-gray-900">{r.actor?.name || r.actor?.email || "Someone"}</span>{" "}
@@ -303,12 +380,14 @@ function Audit({ company }) {
         </div>
       ))}
     </div>
+    </div>
   );
 }
 
 // ── Leave / hand over / delete ───────────────────────────────────────────────
 function Danger({ company }) {
   const [members, setMembers] = useState([]);
+  const [leaving, setLeaving] = useState(false);
   const [newOwner, setNewOwner] = useState("");
   const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState("");
@@ -316,8 +395,8 @@ function Danger({ company }) {
   const me = getStoredUser();
 
   useEffect(() => {
-    if (isOwner) apiRequest(`/companies/${company.id}/members`).then(setMembers).catch(() => {});
-  }, [company.id, isOwner]);
+    if (company.my_role !== "guest") apiRequest(`/companies/${company.id}/members`).then(setMembers).catch(() => {});
+  }, [company.id, company.my_role]);
 
   const run = async (fn, after) => {
     setMsg("");
@@ -356,11 +435,15 @@ function Danger({ company }) {
         <div className="bg-white border border-gray-200 rounded-lg p-5">
           <h3 className="text-sm font-semibold text-gray-900">Leave {company.name}</h3>
           <p className="text-xs text-gray-500 mt-0.5 mb-3">Your tasks stay in the company under your name, marked as a former member.</p>
-          <button className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-sm rounded-md hover:bg-gray-50"
-            onClick={() => window.confirm(`Leave ${company.name}?`) &&
-              run(() => apiRequest(`/companies/${company.id}/leave`, "POST"), () => switchWorkspace(""))}>
-            <LogOut size={14} /> Leave company
-          </button>
+          {leaving ? (
+            <HandOver company={company} person={{ id: me?.id, name: me?.name, email: me?.email }} members={members}
+              onDone={() => switchWorkspace("")} onCancel={() => setLeaving(false)} />
+          ) : (
+            <button className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-sm rounded-md hover:bg-gray-50"
+              onClick={() => setLeaving(true)}>
+              <LogOut size={14} /> Leave company
+            </button>
+          )}
         </div>
       )}
 
@@ -406,7 +489,7 @@ export default function CompanyPage() {
   const isAdmin = ["owner", "admin"].includes(company.my_role);
   const tabs = [
     ["members", "People"],
-    ...(company.my_role !== "guest" ? [["structure", "Structure"], ["org", "Org chart"]] : []),
+    ...(company.my_role !== "guest" ? [["structure", "Structure"], ["org", "Org chart"], ["moves", "Moves"]] : []),
     ...(isAdmin || company.my_role === "manager" ? [["invites", "Invites"], ["onboarding", "Onboarding"]] : []),
     ["general", "Settings"],
     ...(isAdmin ? [["audit", "Audit log"]] : []),
@@ -423,10 +506,10 @@ export default function CompanyPage() {
         </p>
       </div>
 
-      <div className="flex gap-1 border-b border-gray-200 mb-5">
+      <div className="flex gap-1 border-b border-gray-200 mb-5 overflow-x-auto">
         {tabs.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`px-3 py-2 text-sm -mb-px border-b-2 ${tab === key ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+            className={`px-3 py-2 text-sm -mb-px border-b-2 whitespace-nowrap ${tab === key ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
           </button>
         ))}
@@ -437,6 +520,7 @@ export default function CompanyPage() {
         : <Members company={company} />)}
       {tab === "structure" && <CompanyStructure company={company} />}
       {tab === "org" && <OrgChart company={company} />}
+      {tab === "moves" && <CompanyMoves company={company} />}
       {tab === "invites" && <CompanyInvites company={company} />}
       {tab === "onboarding" && <OnboardingChecklists company={company} />}
       {tab === "general" && <General company={company} types={types} onSaved={(c) => setCompany({ ...company, ...c })} />}

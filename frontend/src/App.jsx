@@ -34,6 +34,7 @@ import TaskDetail  from "./pages/TaskDetail";
 import JoinTeam    from "./pages/JoinTeam";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import CompanyPage from "./pages/CompanyPage";
+import Announcements from "./pages/Announcements";
 import Inbox from "./pages/Inbox";
 import JoinCompany from "./pages/JoinCompany";
 import CreateCompany from "./pages/CreateCompany";
@@ -58,6 +59,7 @@ const appRoutes = [
   ["/companies/new",   <CreateCompany />],
   ["/join-company",    <JoinCompany />],
   ["/inbox",           <Inbox />],
+  ["/announcements",   <Announcements />],
 ];
 
 // Send logged-in users away from login/signup

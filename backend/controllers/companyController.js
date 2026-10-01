@@ -2,6 +2,16 @@ import { supabase } from "../config/supabase.js";
 import { can, getCompanyMember, COMPANY_ROLES } from "../utils/permissions.js";
 import { audit } from "../utils/audit.js";
 import { WORK_TYPES } from "../utils/workTypes.js";
+import { handOverWork } from "./companyLifeController.js";
+
+// Optional hand-over when someone goes: { reassign_to } must be an active member who can take work
+const readHandOver = async (companyId, body, leavingId) => {
+  const to = body?.reassign_to;
+  if (!to) return { to: null };
+  const m = await getCompanyMember(companyId, to);
+  if (!m || to === leavingId || ["viewer", "guest"].includes(m.role)) return { error: "Pick someone in the company to take over the work" };
+  return { to };
+};
 
 const slugify = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "company";
@@ -237,10 +247,13 @@ export const removeMember = async (req, res) => {
   if (target.role === "owner") return res.status(400).json({ error: "The owner can't be removed" });
   if (target.role === "admin" && ctx.member.role !== "owner")
     return res.status(403).json({ error: "Only the owner removes an admin" });
+  const handOver = await readHandOver(req.params.id, req.body, req.params.userId);
+  if (handOver.error) return res.status(400).json({ error: handOver.error });
 
+  const moved = handOver.to ? await handOverWork(req.params.id, req.params.userId, handOver.to) : 0;
   await endMembership(req.params.id, req.params.userId);
-  await audit(req, req.params.id, "member.removed", "user", req.params.userId, { role: target.role });
-  res.json({ success: true });
+  await audit(req, req.params.id, "member.removed", "user", req.params.userId, { role: target.role, tasks_handed_over: moved });
+  res.json({ success: true, tasks_handed_over: moved });
 };
 
 // ── POST /companies/:id/leave ─────────────────────────────────────────────────
@@ -249,9 +262,12 @@ export const leaveCompany = async (req, res) => {
   if (!ctx) return;
   if (ctx.member.role === "owner")
     return res.status(400).json({ error: "Hand ownership to someone else before leaving" });
+  const handOver = await readHandOver(req.params.id, req.body, req.user.id);
+  if (handOver.error) return res.status(400).json({ error: handOver.error });
+  const moved = handOver.to ? await handOverWork(req.params.id, req.user.id, handOver.to) : 0;
   await endMembership(req.params.id, req.user.id);
-  await audit(req, req.params.id, "member.left", "user", req.user.id);
-  res.json({ success: true });
+  await audit(req, req.params.id, "member.left", "user", req.user.id, { tasks_handed_over: moved });
+  res.json({ success: true, tasks_handed_over: moved });
 };
 
 // ── POST /companies/:id/transfer-ownership { user_id } — owner only ───────────

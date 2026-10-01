@@ -20,6 +20,7 @@ import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
 import { runImportJob } from "./controllers/integrationController.js";
+import { runTransfersJob } from "./controllers/companyLifeController.js";
 import { requestLogger } from "./middleware/logger.js";
 
 const app = express();
@@ -75,6 +76,11 @@ if (isMainWorker) {
     runRecurringJob().catch((e) => console.error("[Cron] recurring:", e.message));
   cron.schedule("5 * * * *", recurring);
   recurring();
+
+  // approved team moves whose date has come
+  cron.schedule("10 * * * *", () =>
+    runTransfersJob().catch((e) => console.error("[Cron] transfers:", e.message))
+  );
 
   // GitHub / Jira: import finished work every 3 hours
   cron.schedule("20 */3 * * *", () =>

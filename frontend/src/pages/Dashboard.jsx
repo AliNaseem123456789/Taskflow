@@ -5,6 +5,7 @@ import { apiRequest } from "../utils/api";
 import Heatmap from "../components/Heatmap";
 import GoalBar from "../components/GoalBar";
 import { localMonth } from "../utils/date";
+import UnreadAnnouncements from "../components/UnreadAnnouncements";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -95,6 +96,8 @@ export default function Dashboard() {
               <p className="text-sm font-bold text-gray-900">{streak}-day streak</p>
               <p className="text-[10px] text-amber-600">Keep it up!</p>
             </div>
+
+      <UnreadAnnouncements />
           </div>
         )}
       </div>

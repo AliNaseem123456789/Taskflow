@@ -37,6 +37,18 @@ import {
   deleteTemplate,
   assignTemplate,
 } from "../controllers/joinController.js";
+import {
+  requestTransfer,
+  getTransfers,
+  decideTransfer,
+  cancelTransfer,
+  getAnnouncements,
+  createAnnouncement,
+  markAnnouncementRead,
+  getAnnouncementReads,
+  deleteAnnouncement,
+  getOpenWork,
+} from "../controllers/companyLifeController.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -79,5 +91,17 @@ router.post("/:id/onboarding", authenticate, createTemplate);
 router.put("/:id/onboarding/:templateId", authenticate, updateTemplate);
 router.delete("/:id/onboarding/:templateId", authenticate, deleteTemplate);
 router.post("/:id/onboarding/:templateId/assign", authenticate, assignTemplate);
+
+// company life: team moves, announcements, handing over work
+router.get("/:id/transfers", authenticate, getTransfers);
+router.post("/:id/transfers", authenticate, requestTransfer);
+router.post("/:id/transfers/:transferId/decide", authenticate, decideTransfer);
+router.post("/:id/transfers/:transferId/cancel", authenticate, cancelTransfer);
+router.get("/:id/announcements", authenticate, getAnnouncements);
+router.post("/:id/announcements", authenticate, createAnnouncement);
+router.post("/:id/announcements/:aid/read", authenticate, markAnnouncementRead);
+router.get("/:id/announcements/:aid/reads", authenticate, getAnnouncementReads);
+router.delete("/:id/announcements/:aid", authenticate, deleteAnnouncement);
+router.get("/:id/members/:userId/open-work", authenticate, getOpenWork);
 
 export default router;
