@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, Sparkles } from "lucide-react";
+import AssigneeSuggest from "./AssigneeSuggest";
+import { aiRequest, useAI } from "../utils/ai";
 import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
@@ -9,7 +11,7 @@ import { getStoredUser } from "../api/api";
 
 const smallInput =
   "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
-const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "", team_id: "", assignee_id: "" };
+const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "", team_id: "", assignee_id: "", description: "" };
 
 export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [title, setTitle] = useState("");
@@ -22,6 +24,29 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const projects = useMyProjects();
   const { inCompany, members, teams } = useCompanyPeople();
   const me = getStoredUser();
+  const ai = useAI();
+  const [sentence, setSentence] = useState(null); // null = closed
+  const [aiNote, setAiNote] = useState("");
+
+  // "Ask Sara to update the runbook by Friday" -> fills the form for you to check
+  const fillFromSentence = async () => {
+    if (!sentence?.trim()) return;
+    setAiNote("Reading…");
+    try {
+      const t = await aiRequest("/api/tasks/parse", { text: sentence });
+      setTitle(t.title);
+      setExtra((x) => ({
+        ...x, status: "Doing", priority: t.priority || "medium", due_date: t.due_date || "", recurrence: t.recurrence || "",
+        description: t.description || "", project_id: t.project_id || "", team_id: t.project_id ? "" : t.team_id || x.team_id,
+        assignee_id: t.assignee_id && t.assignee_id !== me?.id ? t.assignee_id : "",
+      }));
+      setShowMore(true);
+      setSentence(null);
+      setAiNote(t.unmatched?.length ? `Couldn't find ${t.unmatched.join(", ")} — check the fields.` : "Filled in — check and press Add.");
+    } catch (err) {
+      setAiNote(err.message);
+    }
+  };
   // a company task lands on your team by default (if you're on exactly one)
   useEffect(() => {
     if (inCompany && teams.length === 1) setExtra((x) => (x.team_id ? x : { ...x, team_id: teams[0].id }));
@@ -77,6 +102,21 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
           className="flex-1 text-sm outline-none placeholder:text-gray-400 bg-transparent"
         />
       </div>
+
+      {ai.on && (sentence === null ? (
+        <button type="button" onClick={() => setSentence("")} className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-700">
+          <Sparkles size={11} /> Type it in a sentence
+        </button>
+      ) : (
+        <div className="flex gap-2">
+          <input autoFocus value={sentence} onChange={(e) => setSentence(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); fillFromSentence(); } if (e.key === "Escape") setSentence(null); }}
+            placeholder='e.g. "Ask Sara to update the runbook by Friday, high priority"'
+            className="flex-1 text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white" />
+          <button type="button" onClick={fillFromSentence} className="text-xs px-2 py-1 bg-gray-900 text-white rounded-md">Fill in</button>
+        </div>
+      ))}
+      {aiNote && <p className="text-[11px] text-gray-500">{aiNote}</p>}
 
       {/* Tag picker + more options toggles */}
       <div className="flex items-center gap-4">
@@ -141,6 +181,10 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
                 ))}
               </select>
             </>
+          )}
+          {inCompany && (
+            <AssigneeSuggest onPick={(id) => setExtra((x) => ({ ...x, assignee_id: id === me?.id ? "" : id }))}
+              getInput={() => ({ title, description: extra.description, team_id: extra.team_id || null, due_date: extra.due_date || null })} />
           )}
           {projects.length > 0 && (
             <select className={`${smallInput} col-span-2 sm:col-span-4`} value={extra.project_id} onChange={setField("project_id")} title="Team project">

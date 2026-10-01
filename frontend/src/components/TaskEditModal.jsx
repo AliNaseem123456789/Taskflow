@@ -5,6 +5,7 @@ import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
 import { useMyProjects } from "../utils/projects";
 import { useCompanyPeople } from "../utils/companyPeople";
+import AssigneeSuggest from "./AssigneeSuggest";
 
 const inputCls =
   "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
@@ -144,6 +145,8 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
                   {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}{m.away_until ? ` (away until ${m.away_until.slice(5)})` : ""}</option>)}
                 </select>
               </div>
+              <AssigneeSuggest company={task.company_id} onPick={(id) => setForm((f) => ({ ...f, assignee_id: id }))}
+                getInput={() => ({ task_id: task.id })} />
               <div>
                 <label className={labelCls}>Reviewer</label>
                 <select className={inputCls} value={form.reviewer_id} onChange={set("reviewer_id")}>

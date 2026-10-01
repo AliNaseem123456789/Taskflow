@@ -30,8 +30,49 @@ def feature_of(messages):
     return first.replace("#feature:", "").strip()
 
 
-# canned JSON answers for the one-shot features (filled in per step)
-CANNED: dict = {}
+def _payload(user):
+    try:
+        return json.loads(user)
+    except ValueError:
+        return {}
+
+
+def _breakdown(_m, user):
+    p = _payload(user)
+    first = (p.get("people") or [{}])[0].get("name")
+    return {"subtasks": [{"title": "Draft the outline", "assignee_name": first, "days_from_now": 2},
+                         {"title": "Review with the team", "days_from_now": 5}, {"title": ""}],
+            "checklist": ["Check spelling", 7], "notes": "Start with the outline."}
+
+
+def _parse(_m, user):
+    p = _payload(user)
+    s = p.get("sentence", "").lower()
+    return {"title": "Update the deploy runbook", "description": None, "due_date": "2026-10-09",
+            "priority": "urgent" if "asap" in s else "high", "assignee_name": "bo" if "bo" in s else "Nobody Real",
+            "team_name": None, "project_name": (p.get("projects") or ["Ghost project"])[0], "recurrence": "sometimes"}
+
+
+def _assign(_m, user):
+    p = _payload(user)
+    names = [c["name"] for c in p.get("candidates", [])]
+    if "NOMATCH" in json.dumps(p):
+        return {"suggestions": [{"name": "Somebody Else", "reason": "x"}]}
+    return {"suggestions": [{"name": n, "reason": f"{n} fits"} for n in names[:2]] + [{"name": "Outsider X", "reason": "no"}]}
+
+
+def _handover(_m, user):
+    p = _payload(user)
+    tasks = p.get("open_tasks", [])
+    others = [x["name"] for x in p.get("people", [])]
+    return {"summary": f"{p.get('person', {}).get('name')} has {len(tasks)} open tasks.",
+            "tasks": [{"task_id": t["id"], "state": "half done", "next_step": "finish it", "suggested_owner": others[0] if others else None}
+                      for t in tasks] + [{"task_id": 999999999, "state": "fake"}],
+            "risks": ["Deadline on Friday"], "talk_to": others[:1]}
+
+
+# canned JSON answers for the one-shot features
+CANNED: dict = {"breakdown": _breakdown, "quick_add": _parse, "suggest_assignee": _assign, "handover": _handover}
 
 
 @app.get("/log")

@@ -5,6 +5,73 @@ import TaskList from "../components/TaskList";
 import { apiRequest } from "../utils/api";
 import { getStoredUser } from "../api/api";
 import { STATUS_BADGE } from "../utils/taskMeta";
+import { aiRequest, useAI } from "../utils/ai";
+import { localDate, shiftDate } from "../utils/date";
+import { Sparkles } from "lucide-react";
+
+// AI suggests subtasks (with owners) and checklist items; you tick what to keep
+function Breakdown({ task, opts, onAdded }) {
+  const [state, setState] = useState({ loading: false, data: null, error: "" });
+  const [keep, setKeep] = useState({});
+  const ask = async () => {
+    setState({ loading: true, data: null, error: "" });
+    try {
+      const data = await aiRequest("/api/tasks/breakdown", { task_id: task.id }, { company: task.company_id || "" });
+      const all = {};
+      data.subtasks.forEach((_, i) => (all[`s${i}`] = true));
+      data.checklist.forEach((_, i) => (all[`c${i}`] = true));
+      setKeep(all);
+      setState({ loading: false, data, error: "" });
+    } catch (err) {
+      setState({ loading: false, data: null, error: err.message });
+    }
+  };
+  const add = async () => {
+    const { data } = state;
+    setState({ ...state, loading: true });
+    for (const [i, sub] of data.subtasks.entries()) {
+      if (!keep[`s${i}`]) continue;
+      await apiRequest("/tasks", "POST", {
+        title: sub.title, parent_task_id: task.id, status: "Doing",
+        ...(sub.assignee_id ? { assignee_id: sub.assignee_id } : task.assignee_id ? { assignee_id: task.assignee_id } : {}),
+        ...(sub.days_from_now !== null ? { due_date: shiftDate(localDate(), sub.days_from_now) } : {}),
+      }, opts).catch(() => {});
+    }
+    for (const [i, text] of data.checklist.entries())
+      if (keep[`c${i}`]) await apiRequest(`/tasks/${task.id}/checklist`, "POST", { title: text }, opts).catch(() => {});
+    setState({ loading: false, data: null, error: "" });
+    onAdded();
+  };
+  if (!state.data)
+    return (
+      <div className="mt-2">
+        <button onClick={ask} disabled={state.loading} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 disabled:opacity-50">
+          <Sparkles size={12} /> {state.loading ? "Thinking…" : "Break it down with AI"}
+        </button>
+        {state.error && <p className="text-xs text-red-600 mt-1">{state.error}</p>}
+      </div>
+    );
+  const row = (key, label, sub) => (
+    <label key={key} className="flex items-start gap-2 text-sm text-gray-800">
+      <input type="checkbox" className="mt-1" checked={!!keep[key]} onChange={() => setKeep({ ...keep, [key]: !keep[key] })} />
+      <span>{label}{sub && <span className="text-xs text-gray-400"> · {sub}</span>}</span>
+    </label>
+  );
+  return (
+    <div className="mt-3 border border-gray-200 rounded-md p-3 bg-gray-50 space-y-2">
+      <p className="text-xs font-medium text-gray-600 flex items-center gap-1"><Sparkles size={12} /> Suggested</p>
+      {state.data.subtasks.map((s, i) => row(`s${i}`, s.title,
+        [s.assignee_name, s.days_from_now !== null && `due in ${s.days_from_now} day${s.days_from_now === 1 ? "" : "s"}`].filter(Boolean).join(" · ")))}
+      {state.data.checklist.length > 0 && <p className="text-xs text-gray-500 pt-1">Checklist</p>}
+      {state.data.checklist.map((c, i) => row(`c${i}`, c))}
+      {state.data.notes && <p className="text-xs text-gray-500 italic">{state.data.notes}</p>}
+      <div className="flex gap-2 pt-1">
+        <button onClick={add} disabled={state.loading} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md disabled:opacity-50">Add selected</button>
+        <button onClick={() => setState({ loading: false, data: null, error: "" })} className="px-3 py-1.5 text-xs text-gray-500">Dismiss</button>
+      </div>
+    </div>
+  );
+}
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
@@ -84,6 +151,7 @@ export default function TaskDetail() {
   const [actionError, setActionError] = useState("");
   const [newSub, setNewSub] = useState("");
   const [newItem, setNewItem] = useState("");
+  const ai = useAI();
 
   const load = useCallback(
     () => apiRequest(`/tasks/${id}`).then(setTask).catch((err) => setError(err.message)),
@@ -219,6 +287,7 @@ export default function TaskDetail() {
               <button className="px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50" aria-label="Add subtask"><Plus size={14} /></button>
             </form>
           )}
+          {ai.on && perms.canComment && <Breakdown task={task} opts={opts} onAdded={load} />}
         </Section>
       )}
 

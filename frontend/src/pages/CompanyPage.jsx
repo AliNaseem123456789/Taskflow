@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Trash2, Crown, LogOut, Search } from "lucide-react";
+import { Trash2, Crown, LogOut, Search, Sparkles } from "lucide-react";
+import { aiRequest, useAI } from "../utils/ai";
 import { apiRequest } from "../utils/api";
 import { getWorkspace, getStoredUser, switchWorkspace } from "../api/api";
 import { ROLE_LABELS } from "../utils/workspace";
@@ -11,8 +12,63 @@ import OnboardingChecklists from "../components/OnboardingChecklists";
 import CompanyMoves from "../components/CompanyMoves";
 import AiUsage from "../components/AiUsage";
 
+// AI hand-over note: where each open task stands, the next step, and who could take it
+function HandOverNote({ company, person, onApplied }) {
+  const [note, setNote] = useState(null);
+  const [state, setState] = useState("");
+  const ask = async () => {
+    setState("Writing…");
+    try {
+      setNote(await aiRequest("/api/people/handover", { user_id: person.id }, { company: company.id }));
+      setState("");
+    } catch (err) {
+      setState(err.message);
+    }
+  };
+  const apply = async () => {
+    setState("Re-assigning…");
+    let n = 0;
+    for (const t of note.tasks.filter((x) => x.suggested_owner_id))
+      if (await apiRequest(`/tasks/${t.task_id}`, "PUT", { assignee_id: t.suggested_owner_id }, { company: company.id }).then(() => true).catch(() => false)) n++;
+    setState(`${n} task(s) handed to the suggested people.`);
+    onApplied?.();
+  };
+  const text = note && [note.summary, ...note.tasks.map((t) => `- ${t.title}: ${t.state} Next: ${t.next_step}${t.suggested_owner ? ` (→ ${t.suggested_owner})` : ""}`),
+    note.risks.length ? `Risks: ${note.risks.join("; ")}` : "", note.talk_to.length ? `Talk to: ${note.talk_to.join(", ")}` : ""].filter(Boolean).join("\n");
+  if (!note)
+    return (
+      <div>
+        <button type="button" onClick={ask} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900"><Sparkles size={12} /> Write a hand-over note with AI</button>
+        {state && <p className="text-xs text-gray-500 mt-1">{state}</p>}
+      </div>
+    );
+  return (
+    <div className="border border-gray-200 rounded-md bg-gray-50 p-3 space-y-2 text-sm">
+      <p className="text-gray-800">{note.summary}</p>
+      <ul className="space-y-1">
+        {note.tasks.map((t) => (
+          <li key={t.task_id} className="text-xs text-gray-700">
+            <b className="font-medium">{t.title}</b> — {t.state} <span className="text-gray-500">Next: {t.next_step}</span>
+            {t.suggested_owner && <span className="text-gray-900"> → {t.suggested_owner}</span>}
+          </li>
+        ))}
+      </ul>
+      {note.risks.length > 0 && <p className="text-xs text-amber-700">Risks: {note.risks.join("; ")}</p>}
+      {note.talk_to.length > 0 && <p className="text-xs text-gray-500">Talk to: {note.talk_to.join(", ")}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => navigator.clipboard?.writeText(text)} className="text-xs px-2.5 py-1 border border-gray-200 rounded-md bg-white">Copy note</button>
+        {note.tasks.some((t) => t.suggested_owner_id) && (
+          <button type="button" onClick={apply} className="text-xs px-2.5 py-1 bg-gray-900 text-white rounded-md">Give tasks to the suggested people</button>
+        )}
+      </div>
+      {state && <p className="text-xs text-gray-500">{state}</p>}
+    </div>
+  );
+}
+
 // Before someone goes: show their open work and who should take it over
 function HandOver({ company, person, members, onDone, onCancel }) {
+  const ai = useAI();
   const [work, setWork] = useState(null);
   const [to, setTo] = useState("");
   const [error, setError] = useState("");
@@ -61,6 +117,7 @@ function HandOver({ company, person, members, onDone, onCancel }) {
       ) : (
         <p className="text-sm text-gray-600">No open work to hand over.</p>
       )}
+      {ai.on && open > 0 && <HandOverNote company={company} person={person} />}
       <p className="text-xs text-gray-400">Finished tasks stay under {leaving ? "your" : "their"} name. Personal dones are never touched.</p>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
