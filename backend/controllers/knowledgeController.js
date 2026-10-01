@@ -267,18 +267,32 @@ const loadPage = async (req, res, needEdit = false) => {
 };
 
 // GET /wiki — every page I can see (titles only, for the tree)
+// ?q=words -> only matching pages, each with a short snippet (used by search and "ask the wiki")
 export const getWikiPages = async (req, res) => {
   if (!req.company || req.company.member.role === "guest") return res.json([]);
-  const { data, error } = await supabase
-    .from("wiki_pages").select("id, title, team_id, parent_id, updated_at, teams(name), editor:users!updated_by(name, email)")
-    .eq("company_id", req.company.id).order("title");
+  const q = String(req.query.q || "").trim().slice(0, 200);
+  let query = supabase
+    .from("wiki_pages").select(`id, title, team_id, parent_id, updated_at, teams(name), editor:users!updated_by(name, email)${q ? ", body" : ""}`)
+    .eq("company_id", req.company.id);
+  if (q) {
+    // match any of the meaningful words, in the title or the text
+    const words = q.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length > 2).slice(0, 8);
+    if (!words.length) return res.json([]);
+    query = query.or(words.flatMap((w) => [`title.ilike.%${w}%`, `body.ilike.%${w}%`]).join(","));
+  }
+  const { data, error } = await query.order("title").limit(q ? 50 : 1000);
   if (error) return res.status(500).json({ error: error.message });
   const teamOk = {};
   const out = [];
   for (const p of data) {
     if (p.team_id && teamOk[p.team_id] === undefined) teamOk[p.team_id] = (await teamAccess(p.team_id, req.user.id)).canView;
     if (p.team_id && !teamOk[p.team_id]) continue;
-    const { teams, ...rest } = p;
+    const { teams, body, ...rest } = p;
+    if (q) {
+      const at = body.toLowerCase().indexOf(q.toLowerCase().split(/\s+/)[0]);
+      rest.snippet = body.slice(Math.max(0, at - 80), Math.max(0, at - 80) + 300);
+      rest.body_length = body.length;
+    }
     out.push({ ...rest, team_name: teams?.name });
   }
   res.json(out);

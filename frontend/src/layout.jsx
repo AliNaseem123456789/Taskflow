@@ -8,6 +8,7 @@ import { isLoggedIn } from "./api/api";
 import VerifyEmailBanner from "./components/VerifyEmailBanner";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import { startLive } from "./utils/live";
+import Chatbot from "./components/ChatBot";
 
 // Pages that need a login and show the sidebar
 const AUTH_ROUTES = [
@@ -87,6 +88,7 @@ const Layout = ({ children }) => {
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
         <KeyboardShortcuts />
+        <Chatbot />
       </div>
     );
   }

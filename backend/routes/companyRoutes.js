@@ -51,6 +51,7 @@ import {
 } from "../controllers/companyLifeController.js";
 import { getCompanyUpdates } from "../controllers/knowledgeController.js";
 import { getAnalytics } from "../controllers/analyticsController.js";
+import { getCompanyAiUsage } from "../controllers/aiController.js";
 import {
   getTimeOff,
   requestTimeOff,
@@ -127,5 +128,6 @@ router.post("/:id/holidays", authenticate, addHoliday);
 router.delete("/:id/holidays/:holidayId", authenticate, deleteHoliday);
 router.get("/:id/workload", authenticate, getWorkload);
 router.get("/:id/analytics", authenticate, getAnalytics);
+router.get("/:id/ai-usage", authenticate, getCompanyAiUsage);
 
 export default router;
