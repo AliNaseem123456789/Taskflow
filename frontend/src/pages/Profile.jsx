@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Monitor,
   Smartphone,
@@ -190,11 +190,14 @@ export default function Profile() {
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900">Profile</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage your account and signed-in devices
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Profile</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your account and signed-in devices
+          </p>
+        </div>
+        <Link to="/profile/public" className="px-3 py-2 border border-gray-200 text-sm rounded-md hover:bg-gray-50 shrink-0">Public profile</Link>
       </div>
 
       {error && (

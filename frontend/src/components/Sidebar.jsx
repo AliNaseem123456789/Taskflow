@@ -36,6 +36,7 @@ import {
   ClipboardList,
   BadgeCheck,
   BriefcaseBusiness,
+  Compass,
 } from "lucide-react";
 import { useAI } from "../utils/ai";
 
@@ -49,6 +50,7 @@ const navItems = [
   { icon: Target,          label: "Goals",      path: "/goals"     },
   { icon: Search,          label: "Search",     path: "/search"    },
   { icon: Users,           label: "Team",       path: "/team"      },
+  { icon: Compass,         label: "Discover",   path: "/discover"  },
   { icon: Bell,            label: "Reminders",  path: "/reminders" },
   { icon: BarChart3,       label: "Reports",    path: "/reports"   },
   { icon: Plug,            label: "Integrations", path: "/integrations" },
@@ -116,7 +118,7 @@ export default function Sidebar({ onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems.slice(0, 11), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(11), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
+        {[...navItems.slice(0, 12), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(12), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
           if (section)
             return <p key={section} className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{section}</p>;
           const active = location.pathname === path ||

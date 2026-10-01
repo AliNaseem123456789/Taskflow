@@ -22,6 +22,8 @@ import wikiRoutes from "./routes/wikiRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import timeRoutes from "./routes/timeRoutes.js";
 import approvalRoutes from "./routes/approvalRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
@@ -38,6 +40,8 @@ const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5174")
   .map((o) => o.trim())
   .filter(Boolean);
 
+// behind a reverse proxy (Render, Railway, Nginx…) set TRUST_PROXY=1 so rate limits see real visitor IPs
+if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
 app.use(requestLogger);
 app.use(cors({
   origin: allowedOrigins,
@@ -64,6 +68,8 @@ app.use("/wiki", wikiRoutes);
 app.use("/ai", aiRoutes);
 app.use("/time", timeRoutes);
 app.use("/approvals", approvalRoutes);
+app.use("/profiles", profileRoutes);
+app.use("/public", publicRoutes); // no login: public profiles, company pages, public roles
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

@@ -54,6 +54,7 @@ import { getAnalytics } from "../controllers/analyticsController.js";
 import { getPortfolios, getPortfolio, createPortfolio, updatePortfolio, deletePortfolio } from "../controllers/planningController.js";
 import { getCompanyAiUsage } from "../controllers/aiController.js";
 import { getForms, getForm, createForm, updateForm, deleteForm, submitForm, getSubmissions } from "../controllers/workflowController.js";
+import { getCompanyPage, saveCompanyPage } from "../controllers/profileController.js";
 import { getJobs, getJob, createJob, updateJob, deleteJob, applyToJob, withdrawApplication, updateApplication, getMyApplications } from "../controllers/jobController.js";
 import {
   getTimeOff,
@@ -157,5 +158,9 @@ router.post("/:id/jobs/:jobId/apply", authenticate, applyToJob);
 router.post("/:id/jobs/:jobId/withdraw", authenticate, withdrawApplication);
 router.put("/:id/applications/:appId", authenticate, updateApplication);
 router.get("/:id/my-applications", authenticate, getMyApplications);
+
+// The company's public page (admins turn it on)
+router.get("/:id/public-page", authenticate, getCompanyPage);
+router.put("/:id/public-page", authenticate, saveCompanyPage);
 
 export default router;

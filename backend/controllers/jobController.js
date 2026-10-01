@@ -6,6 +6,7 @@
 import { supabase } from "../config/supabase.js";
 import { notify } from "./notificationController.js";
 import { transferForHire } from "./companyLifeController.js";
+import { issueInvite } from "./joinController.js";
 import { can, getCompanyMember, isCompanyAdmin, teamAccess } from "../utils/permissions.js";
 import { audit } from "../utils/audit.js";
 
@@ -71,6 +72,14 @@ const readPosting = async (body, companyId, partial) => {
   if (body.closes_on !== undefined) {
     if (body.closes_on && !DATE_RE.test(body.closes_on)) return { error: "Invalid closing date" };
     u.closes_on = body.closes_on || null;
+  }
+  if (body.visibility !== undefined) {
+    if (!["internal", "public"].includes(body.visibility)) return { error: "Unknown visibility" };
+    if (body.visibility === "public") {
+      const { data: c } = await supabase.from("companies").select("is_public").eq("id", companyId).single();
+      if (!c?.is_public) return { error: "Turn on the company's public page first (Company → Public page)" };
+    }
+    u.visibility = body.visibility;
   }
   if (body.status !== undefined) {
     if (!["open", "closed", "filled"].includes(body.status)) return { error: "Unknown status" };
@@ -144,16 +153,23 @@ const applicantsFor = async (postingId, companyId) => {
     .select("*, user:users!user_id(id, name, email)").eq("posting_id", postingId).order("created_at");
   const ids = (apps || []).map((a) => a.user_id);
   if (!ids.length) return [];
-  const [{ data: members }, { data: teams }] = await Promise.all([
+  const [{ data: members }, { data: teams }, { data: profiles }] = await Promise.all([
     supabase.from("company_members").select("user_id, job_title, level, skills, status").eq("company_id", companyId).in("user_id", ids),
     supabase.from("team_members").select("user_id, teams!inner(id, name, company_id)").in("user_id", ids).eq("teams.company_id", companyId),
+    supabase.from("public_profiles").select("user_id, handle, headline, skills, location, is_public").in("user_id", ids).eq("is_public", true),
   ]);
   return apps.map((a) => {
     const m = (members || []).find((x) => x.user_id === a.user_id);
+    const prof = (profiles || []).find((x) => x.user_id === a.user_id);
+    const { email: _e, ...user } = a.user || {}; // outside applicants' emails stay private
     return {
       ...a,
-      job_title: m?.job_title || null, level: m?.level || null, skills: m?.skills || [],
-      former_member: !m || m.status !== "active",
+      user: a.external ? user : a.user,
+      job_title: m?.job_title || null, level: m?.level || null,
+      skills: m?.skills?.length ? m.skills : prof?.skills || [],
+      profile: prof ? { handle: prof.handle, headline: prof.headline, location: prof.location } : null,
+      former_member: !a.external && (!m || m.status !== "active"),
+      in_company: !!m && m.status === "active",
       teams: (teams || []).filter((t) => t.user_id === a.user_id).map((t) => t.teams.name),
     };
   });
@@ -244,11 +260,11 @@ export const deleteJob = async (req, res) => {
 
 // Everyone still in the running hears the role is gone
 const closeOutApplicants = async (p, actorId, why) => {
-  const { data: open } = await supabase.from("job_applications").select("id, user_id").eq("posting_id", p.id).in("status", OPEN_STAGES);
+  const { data: open } = await supabase.from("job_applications").select("id, user_id, external").eq("posting_id", p.id).in("status", OPEN_STAGES);
   if (!open?.length) return;
   await supabase.from("job_applications").update({ status: "declined", updated_at: new Date().toISOString() }).in("id", open.map((a) => a.id));
   await notify(actorId, open.map((a) => ({
-    user_id: a.user_id, type: "job", link: `/jobs/${p.id}`,
+    user_id: a.user_id, type: "job", link: a.external ? "/discover?tab=applications" : `/jobs/${p.id}`,
     message: why === "filled" ? `"${p.title}" has been filled — thanks for applying` : `"${p.title}" is no longer open`,
   })));
 };
@@ -318,9 +334,20 @@ export const updateApplication = async (req, res) => {
     u.status = status;
   }
   let transfer = null;
+  let invited = false;
   if (status === "hired") {
     const applicant = await getCompanyMember(req.params.id, a.user_id);
-    if (!applicant) return res.status(400).json({ error: "They're no longer in the company" });
+    if (!applicant && !a.external) return res.status(400).json({ error: "They're no longer in the company" });
+    if (!applicant) {
+      // someone from outside: invite them into the company (and the role's team); their email stays hidden
+      const { data: user } = await supabase.from("users").select("id, email").eq("id", a.user_id).single();
+      const r = await issueInvite({ companyId: req.params.id, email: user.email.toLowerCase(), role: "member", teamId: a.posting.team_id || null, actorId: req.user.id, existing: user, viaProfile: true, waitForEmail: false });
+      if (r.error) return res.status(500).json({ error: r.error });
+      invited = true;
+    }
+  }
+  if (status === "hired" && !invited) {
+    const applicant = await getCompanyMember(req.params.id, a.user_id);
     if (a.posting.team_id && !["guest", "viewer"].includes(applicant.role)) {
       transfer = await transferForHire({
         companyId: req.params.id, userId: a.user_id, toTeamId: a.posting.team_id, actor: member,
@@ -333,7 +360,10 @@ export const updateApplication = async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   if (status && status !== a.status && STAGE_LABEL[status])
-    await notify(req.user.id, [{ user_id: a.user_id, type: "job", link: `/jobs/${a.posting.id}`, message: `Your application for ${a.posting.title} ${STAGE_LABEL[status]}` }]);
+    await notify(req.user.id, [{
+      user_id: a.user_id, type: "job", link: a.external ? "/discover?tab=applications" : `/jobs/${a.posting.id}`,
+      message: `Your application for ${a.posting.title} ${STAGE_LABEL[status]}${invited ? " — check your invite to join" : ""}`,
+    }]);
   if (status === "hired") {
     await audit(req, req.params.id, "job.hired", "job_posting", a.posting.id, { user_id: a.user_id });
     const { count } = await supabase.from("job_applications").select("id", { count: "exact", head: true }).eq("posting_id", a.posting.id).eq("status", "hired");
@@ -342,7 +372,7 @@ export const updateApplication = async (req, res) => {
       await closeOutApplicants(a.posting, req.user.id, "filled");
     }
   }
-  res.json({ ...data, transfer });
+  res.json({ ...data, transfer, invited });
 };
 
 // GET /companies/:id/my-applications

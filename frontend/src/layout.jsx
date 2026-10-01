@@ -33,6 +33,7 @@ const AUTH_ROUTES = [
   "/forms",
   "/approvals",
   "/jobs",
+  "/discover",
   "/updates",
   "/decisions",
   "/wiki",
@@ -98,6 +99,9 @@ const Layout = ({ children }) => {
       </div>
     );
   }
+
+  // public profiles and company pages bring their own slim header
+  if (/^\/(u|c)\//.test(location.pathname)) return children;
 
   // Public layout
   return (

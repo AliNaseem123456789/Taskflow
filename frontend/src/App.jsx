@@ -43,6 +43,10 @@ import Timesheet from "./pages/Timesheet";
 import Forms from "./pages/Forms";
 import Approvals from "./pages/Approvals";
 import Jobs from "./pages/Jobs";
+import Discover from "./pages/Discover";
+import PublicProfileEdit from "./pages/PublicProfileEdit";
+import PublicProfile from "./pages/PublicProfile";
+import PublicCompany from "./pages/PublicCompany";
 import TimeOff from "./pages/TimeOff";
 import Workload from "./pages/Workload";
 import Wiki from "./pages/Wiki";
@@ -96,6 +100,8 @@ const appRoutes = [
   ["/jobs/new",        <Jobs />],
   ["/jobs/:id",        <Jobs />],
   ["/jobs/:id/edit",   <Jobs />],
+  ["/discover",        <Discover />],
+  ["/profile/public",  <PublicProfileEdit />],
   ["/solve",           <SolveProblem />],
 ];
 
@@ -121,6 +127,10 @@ export default function App() {
           <Route path="/productivity-guide" element={<ProductivityGuide />} />
           <Route path="/privacy-policy"    element={<PrivacyPolicy />} />
           <Route path="/terms-of-service"  element={<TermsOfService />} />
+          {/* public, no login: profiles and company pages people chose to publish */}
+          <Route path="/u/:handle"          element={<PublicProfile />} />
+          <Route path="/c/:slug"            element={<PublicCompany />} />
+          <Route path="/c/:slug/jobs/:jobId" element={<PublicCompany />} />
 
           {/* App (login required) */}
           {appRoutes.map(([path, element]) => (

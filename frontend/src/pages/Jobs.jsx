@@ -42,7 +42,7 @@ function JobCard({ j, mine }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900">{j.title}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{[j.team?.name || "Company-wide", KIND[j.kind], j.level].filter(Boolean).join(" · ")}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{[j.team?.name || "Company-wide", KIND[j.kind], j.level].filter(Boolean).join(" · ")}{j.visibility === "public" && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700">Public</span>}</p>
         </div>
         {j.my_application ? <StageChip status={j.my_application.status} />
           : j.status !== "open" ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{j.status}</span>
@@ -166,7 +166,7 @@ function JobForm({ companyId, id }) {
   const { teams, members } = useCompanyPeople();
   const me = getStoredUser()?.id;
   const [form, setForm] = useState(id ? null : {
-    title: "", team_id: "", kind: "full_time", level: "", location: "", openings: 1, closes_on: "", skills: "", hiring_manager_id: me, description: "",
+    title: "", team_id: "", kind: "full_time", level: "", location: "", openings: 1, closes_on: "", skills: "", hiring_manager_id: me, description: "", visibility: "internal",
   });
   const [error, setError] = useState("");
   useEffect(() => {
@@ -185,7 +185,7 @@ function JobForm({ companyId, id }) {
     const body = {
       title: form.title, team_id: form.team_id || null, kind: form.kind, level: form.level, location: form.location,
       openings: Number(form.openings), closes_on: form.closes_on || null, hiring_manager_id: form.hiring_manager_id || null,
-      description: form.description, skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+      description: form.description, skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean), visibility: form.visibility,
     };
     try {
       const r = id ? await apiRequest(`/companies/${companyId}/jobs/${id}`, "PUT", body) : await apiRequest(`/companies/${companyId}/jobs`, "POST", body);
@@ -235,6 +235,10 @@ function JobForm({ companyId, id }) {
         <label className={label}>Description (Markdown works: **bold**, lists, links)
           <textarea rows={8} className={`${inputCls} w-full mt-1`} placeholder="What the role is, what you'd work on, what we're looking for…" value={form.description} onChange={set("description")} />
         </label>
+        <label className="flex items-start gap-2 text-sm text-gray-800">
+          <input type="checkbox" className="mt-0.5" checked={form.visibility === "public"} onChange={(e) => setForm({ ...form, visibility: e.target.checked ? "public" : "internal" })} />
+          <span>Show on our public page too<span className="block text-xs text-gray-500">People outside the company can find it and apply with their public profile. Needs the company's public page turned on.</span></span>
+        </label>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">{id ? "Save" : "Post role"}</button>
@@ -248,7 +252,9 @@ function Applicant({ a, companyId, onChange }) {
   const [error, setError] = useState("");
   const move = async (status) => {
     setError("");
-    if (status === "hired" && !window.confirm(`Hire ${a.user.name || a.user.email}? If the role is on a team, their move to that team starts now.`)) return;
+    if (status === "hired" && !window.confirm(a.external
+      ? `Hire ${a.user.name || "them"}? They'll get an invite to join the company.`
+      : `Hire ${a.user.name || a.user.email}? If the role is on a team, their move to that team starts now.`)) return;
     try {
       await apiRequest(`/companies/${companyId}/applications/${a.id}`, "PUT", { status });
       onChange();
@@ -260,10 +266,14 @@ function Applicant({ a, companyId, onChange }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold shrink-0">{(a.user.name || a.user.email)[0].toUpperCase()}</div>
+        <div className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold shrink-0">{(a.user.name || a.user.email || "?")[0].toUpperCase()}</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">{a.user.name || a.user.email}</p>
-          <p className="text-xs text-gray-500">{[a.job_title, a.level, a.teams.length ? `on ${a.teams.join(", ")}` : null].filter(Boolean).join(" · ") || "—"}{a.former_member && " · no longer in the company"}</p>
+          <p className="text-sm font-medium text-gray-900">{a.user.name || a.user.email || a.profile?.handle}</p>
+          <p className="text-xs text-gray-500">
+            {a.external
+              ? <>From outside{a.profile?.headline ? ` · ${a.profile.headline}` : ""}{a.profile && <> · <Link to={`/u/${a.profile.handle}`} className="underline">profile</Link></>}</>
+              : <>{[a.job_title, a.level, a.teams.length ? `on ${a.teams.join(", ")}` : null].filter(Boolean).join(" · ") || "—"}{a.former_member && " · no longer in the company"}</>}
+          </p>
         </div>
         <StageChip status={a.status} />
       </div>
@@ -284,7 +294,8 @@ function Applicant({ a, companyId, onChange }) {
         <input className="flex-1 text-xs px-2 py-1 border border-transparent hover:border-gray-200 focus:border-gray-300 rounded outline-none bg-transparent text-gray-700" placeholder="Private note for the hiring side" value={note}
           onChange={(e) => setNote(e.target.value)} onBlur={() => note !== (a.hiring_note || "") && apiRequest(`/companies/${companyId}/applications/${a.id}`, "PUT", { hiring_note: note }).catch(() => {})} aria-label="Hiring note" />
       </div>
-      {a.transfer_id && <p className="text-[11px] text-emerald-700">Team move created — see Company → Transfers.</p>}
+      {a.transfer_id && <p className="text-[11px] text-emerald-700">Team move created — see Company → Moves.</p>}
+      {a.external && a.status === "hired" && <p className="text-[11px] text-emerald-700">Invite sent — they join when they accept it.</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );

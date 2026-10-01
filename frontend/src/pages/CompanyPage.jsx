@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import CompanyPublicPage from "../components/CompanyPublicPage";
 import { Navigate } from "react-router-dom";
 import { Trash2, Crown, LogOut, Search, Sparkles } from "lucide-react";
 import { aiRequest, useAI } from "../utils/ai";
@@ -550,6 +551,7 @@ export default function CompanyPage() {
     ...(company.my_role !== "guest" ? [["structure", "Structure"], ["org", "Org chart"], ["moves", "Moves"]] : []),
     ...(isAdmin || company.my_role === "manager" ? [["invites", "Invites"], ["onboarding", "Onboarding"]] : []),
     ["general", "Settings"],
+    ...(company.my_role !== "guest" ? [["public", "Public page"]] : []),
     ...(isAdmin ? [["audit", "Audit log"], ["ai", "AI usage"]] : []),
     ["danger", company.my_role === "owner" ? "Ownership" : "Leave"],
   ];
@@ -581,6 +583,7 @@ export default function CompanyPage() {
       {tab === "moves" && <CompanyMoves company={company} />}
       {tab === "invites" && <CompanyInvites company={company} />}
       {tab === "onboarding" && <OnboardingChecklists company={company} />}
+      {tab === "public" && <CompanyPublicPage company={company} />}
       {tab === "general" && <General company={company} types={types} onSaved={(c) => setCompany({ ...company, ...c })} />}
       {tab === "audit" && <Audit company={company} />}
       {tab === "ai" && <AiUsage company={company} />}

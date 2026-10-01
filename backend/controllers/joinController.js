@@ -102,7 +102,16 @@ export const createCompanyInvite = async (req, res) => {
   if (!member) return;
   if (!can(member, "members.invite")) return res.status(403).json({ error: "Only admins and managers invite people" });
 
-  const email = String(req.body.email || "").trim().toLowerCase();
+  // invite by email, or by user id from someone's public profile (their email stays hidden)
+  const byUserId = !req.body.email && req.body.user_id;
+  let email = String(req.body.email || "").trim().toLowerCase();
+  if (byUserId) {
+    const { data: prof } = UUID_RE.test(req.body.user_id)
+      ? await supabase.from("public_profiles").select("is_public, users!user_id(email)").eq("user_id", req.body.user_id).maybeSingle()
+      : { data: null };
+    if (!prof?.is_public) return res.status(404).json({ error: "Profile not found" });
+    email = prof.users.email.toLowerCase();
+  }
   if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Enter a valid email" });
   const role = req.body.role || "member";
   if (!["admin", "manager", "member", "guest", "viewer"].includes(role)) return res.status(400).json({ error: "Unknown role" });
@@ -134,36 +143,52 @@ export const createCompanyInvite = async (req, res) => {
   if (existing && (await getCompanyMember(req.params.id, existing.id)) && !teamId && !projectId)
     return res.status(400).json({ error: "That person is already in the company" });
 
+  const { invite, error, sent } = await issueInvite({
+    companyId: req.params.id, email, role, teamId, projectId, templateId, actorId: req.user.id, existing, viaProfile: !!byUserId,
+  });
+  if (error) return res.status(500).json({ error });
+  await audit(req, req.params.id, "invite.sent", "invite", invite.id, { email: byUserId ? "(public profile)" : email, role });
+  // inviting from a public profile never reveals the person's email
+  res.status(201).json({ ...invite, email: byUserId ? maskEmail(email) : email, email_sent: sent });
+};
+
+const maskEmail = (e) => e.replace(/^(.)[^@]*(@.).*$/, "$1•••$2•••");
+
+// Create an invite, email the link and (if they have an account) notify them.
+// Used for normal invites, invites from a public profile, and hires from public job posts.
+export const issueInvite = async ({ companyId, email, role = "member", teamId = null, projectId = null, templateId = null, actorId, existing, viaProfile = false, waitForEmail = true }) => {
   const raw = crypto.randomBytes(24).toString("hex");
   const { data: invite, error } = await supabase
     .from("company_invites")
     .insert([{
-      company_id: req.params.id, email, role, team_id: teamId, project_id: projectId, template_id: templateId,
-      token_hash: hashToken(raw), invited_by: req.user.id,
+      company_id: companyId, email, role, team_id: teamId, project_id: projectId, template_id: templateId,
+      token_hash: hashToken(raw), invited_by: actorId, via_profile: viaProfile,
       expires_at: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
     }])
     .select("id, email, role, team_id, project_id, expires_at, created_at")
     .single();
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return { error: error.message };
 
   const [{ data: company }, { data: me }] = await Promise.all([
-    supabase.from("companies").select("name").eq("id", req.params.id).single(),
-    supabase.from("users").select("name, email").eq("id", req.user.id).single(),
+    supabase.from("companies").select("name").eq("id", companyId).single(),
+    supabase.from("users").select("name, email").eq("id", actorId).single(),
   ]);
   const inviter = me?.name || me?.email || "Someone";
   const link = appLink(`/join-company?token=${raw}`);
-  const sent = await sendEmail(
+  const sending = sendEmail(
     email,
     `${inviter} invited you to ${company.name}`,
     `Hi!\n\n${inviter} invited you to join "${company.name}" on Taskflow.\n\nJoin here: ${link}\n\nThe link works for 7 days. If you don't have an account yet, sign up with this email first.\n\n– Taskflow`
   );
-  if (existing)
-    await notify(req.user.id, [{
-      user_id: existing.id, type: "invite", link: `/join-company?token=${raw}`,
+  // the email can go out in the background when the caller shouldn't wait on the mail server
+  const sent = waitForEmail ? await sending : null;
+  const user = existing === undefined ? await findUserByEmail(email) : existing;
+  if (user)
+    await notify(actorId, [{
+      user_id: user.id, type: "invite", link: `/join-company?token=${raw}`,
       message: `${inviter} invited you to join ${company.name}`,
     }]);
-  await audit(req, req.params.id, "invite.sent", "invite", invite.id, { email, role });
-  res.status(201).json({ ...invite, email_sent: sent });
+  return { invite, sent };
 };
 
 // GET /companies/:id/invites — pending invites
@@ -173,13 +198,13 @@ export const getCompanyInvites = async (req, res) => {
   if (!can(member, "members.invite")) return res.status(403).json({ error: "Only admins and managers see invites" });
   const { data, error } = await supabase
     .from("company_invites")
-    .select("id, email, role, team_id, project_id, template_id, expires_at, created_at, teams(name), projects(name)")
+    .select("id, email, role, team_id, project_id, template_id, expires_at, created_at, via_profile, teams(name), projects(name)")
     .eq("company_id", req.params.id)
     .is("accepted_at", null)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data.map(({ teams, projects, ...i }) => ({ ...i, team_name: teams?.name, project_name: projects?.name })));
+  res.json(data.map(({ teams, projects, ...i }) => ({ ...i, email: i.via_profile ? maskEmail(i.email) : i.email, team_name: teams?.name, project_name: projects?.name })));
 };
 
 // DELETE /companies/:id/invites/:inviteId
