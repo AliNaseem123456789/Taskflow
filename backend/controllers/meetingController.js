@@ -9,6 +9,7 @@ import { getCompanyMember, isCompanyAdmin, teamAccess } from "../utils/permissio
 import { audit } from "../utils/audit.js";
 import { sendTo } from "../utils/events.js";
 import { todayIn } from "../utils/time.js";
+import { logMeetingDecisions } from "./knowledgeController.js";
 
 const KINDS = ["meeting", "one_on_one", "retro", "standup", "review"];
 const ITEM_KINDS = ["topic", "decision", "action", "went_well", "to_improve", "idea"];
@@ -476,6 +477,7 @@ export const finishMeeting = async (req, res) => {
     }
   }
   await supabase.from("meetings").update({ status: "done", updated_at: new Date().toISOString() }).eq("id", meeting.id);
+  const decisionsLogged = await logMeetingDecisions(meeting, req.user.id);
 
   // summary to attendees, once
   const { data: claimed } = await supabase.from("meetings").update({ summary_sent_at: new Date().toISOString() })
@@ -499,7 +501,7 @@ export const finishMeeting = async (req, res) => {
       message: `Notes from ${meeting.title}: ${decisions.length} decision(s), ${actions.length} action(s)`,
     })));
   }
-  res.json({ success: true, tasks_created: created, ...(await fullMeeting(meeting.id, req.user.id)) });
+  res.json({ success: true, tasks_created: created, decisions_logged: decisionsLogged, ...(await fullMeeting(meeting.id, req.user.id)) });
 };
 
 // ── GET /meetings/:id/ics — add to any calendar app ─────────────────────────

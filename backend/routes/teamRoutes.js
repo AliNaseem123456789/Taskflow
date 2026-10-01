@@ -38,6 +38,7 @@ import {
 } from "../controllers/projectController.js";
 import { getStandups, getStandupDraft, saveStandup } from "../controllers/standupController.js";
 import { setTeamSlack } from "../controllers/integrationController.js";
+import { getProjectUpdates, postProjectUpdate } from "../controllers/knowledgeController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -84,6 +85,8 @@ router.get("/:id/projects/:projectId/members", auth, getProjectMembers);
 router.get("/:id/projects/:projectId/board", auth, getProjectBoard);
 router.put("/:id/projects/:projectId/board/move", auth, moveOnBoard);
 router.put("/:id/projects/:projectId/statuses", auth, saveProjectStatuses);
+router.get("/:id/projects/:projectId/updates", auth, getProjectUpdates);
+router.post("/:id/projects/:projectId/updates", auth, postProjectUpdate);
 router.post("/:id/projects/:projectId/members", auth, addProjectMember);
 router.delete("/:id/projects/:projectId/members/:userId", auth, removeProjectMember);
 

@@ -17,6 +17,8 @@ import eventRoutes from "./routes/eventRoutes.js";
 import integrationRoutes from "./routes/integrationRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import meetingRoutes from "./routes/meetingRoutes.js";
+import decisionRoutes from "./routes/decisionRoutes.js";
+import wikiRoutes from "./routes/wikiRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
@@ -54,6 +56,8 @@ app.use("/events", eventRoutes); // live updates (Server-Sent Events)
 app.use("/integrations", integrationRoutes);
 app.use("/companies", companyRoutes);
 app.use("/meetings", meetingRoutes);
+app.use("/decisions", decisionRoutes);
+app.use("/wiki", wikiRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

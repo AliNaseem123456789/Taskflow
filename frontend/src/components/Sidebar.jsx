@@ -23,6 +23,9 @@ import {
   Inbox,
   Megaphone,
   Video,
+  Activity,
+  Scale,
+  BookOpen,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +41,17 @@ const navItems = [
   { icon: BarChart3,       label: "Reports",    path: "/reports"   },
   { icon: Plug,            label: "Integrations", path: "/integrations" },
   { icon: UserCircle,      label: "Profile",    path: "/profile"   },
+];
+
+// Shown only inside a company workspace
+const companyItems = [
+  { section: "Company" },
+  { icon: Video,      label: "Meetings",      path: "/meetings" },
+  { icon: Megaphone,  label: "Announcements", path: "/announcements" },
+  { icon: Activity,   label: "Project updates", path: "/updates" },
+  { icon: Scale,      label: "Decisions",     path: "/decisions" },
+  { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
+  { icon: Building2,  label: "People & settings", path: "/company" },
 ];
 
 export default function Sidebar({ onClose }) {
@@ -81,9 +95,11 @@ export default function Sidebar({ onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems, ...(getWorkspace() ? [{ icon: Video, label: "Meetings", path: "/meetings" }, { icon: Megaphone, label: "Announcements", path: "/announcements" }, { icon: Building2, label: "Company", path: "/company" }] : [])].map(({ icon: Icon, label, path }) => {
+        {[...navItems, ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
+          if (section)
+            return <p key={section} className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{section}</p>;
           const active = location.pathname === path ||
-            (path === "/team" && location.pathname.startsWith("/team/"));
+            (path !== "/" && location.pathname.startsWith(`${path}/`));
           return (
             <button
               key={path}

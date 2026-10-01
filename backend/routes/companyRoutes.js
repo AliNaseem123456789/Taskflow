@@ -49,6 +49,7 @@ import {
   deleteAnnouncement,
   getOpenWork,
 } from "../controllers/companyLifeController.js";
+import { getCompanyUpdates } from "../controllers/knowledgeController.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -103,5 +104,6 @@ router.post("/:id/announcements/:aid/read", authenticate, markAnnouncementRead);
 router.get("/:id/announcements/:aid/reads", authenticate, getAnnouncementReads);
 router.delete("/:id/announcements/:aid", authenticate, deleteAnnouncement);
 router.get("/:id/members/:userId/open-work", authenticate, getOpenWork);
+router.get("/:id/updates", authenticate, getCompanyUpdates);
 
 export default router;
