@@ -21,6 +21,7 @@ import decisionRoutes from "./routes/decisionRoutes.js";
 import wikiRoutes from "./routes/wikiRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import timeRoutes from "./routes/timeRoutes.js";
+import approvalRoutes from "./routes/approvalRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
@@ -62,6 +63,7 @@ app.use("/decisions", decisionRoutes);
 app.use("/wiki", wikiRoutes);
 app.use("/ai", aiRoutes);
 app.use("/time", timeRoutes);
+app.use("/approvals", approvalRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

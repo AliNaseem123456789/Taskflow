@@ -10,6 +10,8 @@ import { useCompanyPeople } from "../../utils/companyPeople";
 import { ROLE_LABELS } from "../../utils/workspace";
 import ProjectBoard from "./ProjectBoard";
 import ProjectTimeline from "./ProjectTimeline";
+import ProjectFields from "./ProjectFields";
+import { fieldText, useMembersOf } from "../../utils/fields";
 
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#ec4899", "#6b7280"];
 
@@ -75,6 +77,14 @@ function ProjectPeople({ team, project }) {
 function ProjectTasks({ team, project, onBack }) {
   const [view, setView] = useState("board");
   const [tasks, setTasks] = useState(null);
+  const [showFields, setShowFields] = useState(false);
+  const [fields, setFields] = useState([]);
+  const people = useMembersOf(project.company_id || team.company_id);
+  const loadFields = useCallback(
+    () => apiRequest(`/teams/${team.id}/projects/${project.id}/fields`).then((d) => setFields(d.fields)).catch(() => setFields([])),
+    [team.id, project.id]
+  );
+  useEffect(() => { loadFields(); }, [loadFields]);
   const load = useCallback(
     () => apiRequest(`/teams/${team.id}/projects/${project.id}/tasks`).then(setTasks).catch(() => setTasks([])),
     [team.id, project.id]
@@ -100,7 +110,13 @@ function ProjectTasks({ team, project, onBack }) {
             {label}
           </button>
         ))}
+        {team.role === "admin" && (
+          <button onClick={() => setShowFields(!showFields)} className={`ml-auto px-3 py-1 text-xs rounded-md border ${showFields ? "border-gray-900 text-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            Fields{fields.length ? ` (${fields.length})` : ""}
+          </button>
+        )}
       </div>
+      {showFields && <ProjectFields team={team} project={project} onClose={() => setShowFields(false)} onChanged={() => { loadFields(); load(); }} />}
       {view === "board" ? <ProjectBoard team={team} project={project} /> : view === "timeline" ? <ProjectTimeline team={team} project={project} /> : (
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
         {tasks === null && <p className="p-4 text-sm text-gray-400">Loading…</p>}
@@ -111,6 +127,13 @@ function ProjectTasks({ team, project, onBack }) {
               <p className={`text-sm text-gray-900 ${t.status === "Done" ? "line-through text-gray-400" : ""}`}>{t.title}</p>
               <p className="text-xs text-gray-400 mt-0.5">{t.owner?.name || t.owner?.email} · {t.date_logged}</p>
               <TaskMeta task={t} />
+              {fields.some((f) => fieldText(f, t.fields?.[f.id], people.byId)) && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {fields.map((f) => [f, fieldText(f, t.fields?.[f.id], people.byId)]).filter(([, v]) => v).map(([f, v]) => (
+                    <span key={f.id} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600"><span className="text-gray-400">{f.kind === "checkbox" ? "" : `${f.name}: `}</span>{v}</span>
+                  ))}
+                </div>
+              )}
             </div>
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${STATUS_BADGE[t.status]}`}>{t.status}</span>
           </Link>

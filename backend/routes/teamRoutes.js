@@ -53,6 +53,7 @@ import {
   updateSprintSettings,
 } from "../controllers/sprintController.js";
 import { getTimeline, createMilestone, updateMilestone, deleteMilestone } from "../controllers/planningController.js";
+import { getFields, createField, updateField, deleteField } from "../controllers/workflowController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -104,6 +105,11 @@ router.get("/:id/projects/:projectId/timeline", auth, getTimeline);
 router.post("/:id/projects/:projectId/milestones", auth, createMilestone);
 router.put("/:id/projects/:projectId/milestones/:milestoneId", auth, updateMilestone);
 router.delete("/:id/projects/:projectId/milestones/:milestoneId", auth, deleteMilestone);
+// Custom fields on a project's tasks (lead edits, everyone on the project reads)
+router.get("/:id/projects/:projectId/fields", auth, getFields);
+router.post("/:id/projects/:projectId/fields", auth, createField);
+router.put("/:id/projects/:projectId/fields/:fieldId", auth, updateField);
+router.delete("/:id/projects/:projectId/fields/:fieldId", auth, deleteField);
 
 // Sprints
 router.get("/:id/sprints", auth, getSprints);

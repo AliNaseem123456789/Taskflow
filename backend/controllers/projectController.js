@@ -7,6 +7,7 @@ import { getCompanyMember, taskScope, taskAccess } from "../utils/permissions.js
 import { audit } from "../utils/audit.js";
 import { WORK_TYPES } from "../utils/workTypes.js";
 import { ensureStatuses, columnFor, legacyStatus, CATEGORIES } from "../utils/projectStatuses.js";
+import { fieldValuesFor } from "./workflowController.js";
 
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
 
@@ -174,7 +175,8 @@ export const getProjectTasks = async (req, res) => {
     .eq("projects.team_id", id)
     .order("date_logged", { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.assignee || t.creator })));
+  const values = await fieldValuesFor(data.map((t) => t.id));
+  res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.assignee || t.creator, fields: values[t.id] || {} })));
 };
 
 // ── Project board: columns and cards ────────────────────────────────────────
@@ -211,11 +213,14 @@ export const getProjectBoard = async (req, res) => {
     : [{ data: [] }, { data: [] }, { data: [] }];
 
   const membership = await getMembership(id, req.user.id);
+  const values = await fieldValuesFor(ids);
+  const { data: fields } = await supabase.from("project_fields").select("*").eq("project_id", projectId).order("position").order("created_at");
   const cutoff = Date.now() - 14 * 86400000; // finished cards stay on the board for two weeks
   res.json({
     project,
     statuses,
     can_edit_columns: membership?.role === "admin",
+    fields: fields || [],
     tasks: tasks
       .map((t) => {
         const col = columnFor(t, statuses);
@@ -227,6 +232,7 @@ export const getProjectBoard = async (req, res) => {
           subtasks: { total: mySubs.length, done: mySubs.filter((x) => x.status === "Done").length },
           checklist: { total: myItems.length, done: myItems.filter((x) => x.done).length },
           blocked: (deps || []).some((d) => d.task_id === t.id && d.blocker && d.blocker.status !== "Done"),
+          fields: values[t.id] || {},
         };
       })
       .filter((t) => !doneIds.includes(t.column_id) || !t.completed_at || new Date(t.completed_at).getTime() > cutoff),

@@ -33,6 +33,8 @@ import {
   LineChart as LineChartIcon,
   Lightbulb,
   Timer,
+  ClipboardList,
+  BadgeCheck,
 } from "lucide-react";
 import { useAI } from "../utils/ai";
 
@@ -59,6 +61,8 @@ const companyItems = [
   { icon: Megaphone,  label: "Announcements", path: "/announcements" },
   { icon: Activity,   label: "Project updates", path: "/updates" },
   { icon: Briefcase,  label: "Portfolios",    path: "/portfolios" },
+  { icon: ClipboardList, label: "Request forms", path: "/forms" },
+  { icon: BadgeCheck, label: "Approvals",     path: "/approvals" },
   { icon: Scale,      label: "Decisions",     path: "/decisions" },
   { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
   { icon: Plane,      label: "Time off",      path: "/time-off" },

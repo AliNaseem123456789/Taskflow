@@ -40,6 +40,8 @@ import SolveProblem from "./pages/SolveProblem";
 import Analytics from "./pages/Analytics";
 import Portfolios from "./pages/Portfolios";
 import Timesheet from "./pages/Timesheet";
+import Forms from "./pages/Forms";
+import Approvals from "./pages/Approvals";
 import TimeOff from "./pages/TimeOff";
 import Workload from "./pages/Workload";
 import Wiki from "./pages/Wiki";
@@ -83,6 +85,12 @@ const appRoutes = [
   ["/portfolios",      <Portfolios />],
   ["/portfolios/:id",  <Portfolios />],
   ["/timesheet",       <Timesheet />],
+  ["/forms",           <Forms />],
+  ["/forms/new",       <Forms />],
+  ["/forms/:id",       <Forms />],
+  ["/forms/:id/edit",  <Forms />],
+  ["/forms/:id/requests", <Forms />],
+  ["/approvals",       <Approvals />],
   ["/solve",           <SolveProblem />],
 ];
 

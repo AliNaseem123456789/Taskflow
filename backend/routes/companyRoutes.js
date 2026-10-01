@@ -53,6 +53,7 @@ import { getCompanyUpdates } from "../controllers/knowledgeController.js";
 import { getAnalytics } from "../controllers/analyticsController.js";
 import { getPortfolios, getPortfolio, createPortfolio, updatePortfolio, deletePortfolio } from "../controllers/planningController.js";
 import { getCompanyAiUsage } from "../controllers/aiController.js";
+import { getForms, getForm, createForm, updateForm, deleteForm, submitForm, getSubmissions } from "../controllers/workflowController.js";
 import {
   getTimeOff,
   requestTimeOff,
@@ -135,5 +136,14 @@ router.get("/:id/portfolios/:portfolioId", authenticate, getPortfolio);
 router.put("/:id/portfolios/:portfolioId", authenticate, updatePortfolio);
 router.delete("/:id/portfolios/:portfolioId", authenticate, deletePortfolio);
 router.get("/:id/ai-usage", authenticate, getCompanyAiUsage);
+
+// Request forms: fill one in and it becomes a task in a project
+router.get("/:id/forms", authenticate, getForms);
+router.post("/:id/forms", authenticate, createForm);
+router.get("/:id/forms/:formId", authenticate, getForm);
+router.put("/:id/forms/:formId", authenticate, updateForm);
+router.delete("/:id/forms/:formId", authenticate, deleteForm);
+router.post("/:id/forms/:formId/submit", authenticate, submitForm);
+router.get("/:id/forms/:formId/submissions", authenticate, getSubmissions);
 
 export default router;

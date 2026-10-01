@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   DndContext, DragOverlay, PointerSensor, TouchSensor, KeyboardSensor, closestCorners, useDroppable, useSensor, useSensors,
@@ -9,12 +9,15 @@ import { ArrowDown, ArrowUp, ListChecks, Lock, Plus, Settings2, X } from "lucide
 import { apiRequest } from "../../utils/api";
 import { useLiveEvent } from "../../utils/live";
 import { priorityInfo } from "../../utils/taskMeta";
+import { FieldsContext, fieldText, useMembersOf } from "../../utils/fields";
 
 const KINDS = [["todo", "Not started"], ["in_progress", "In progress"], ["done", "Done"]];
 const inputCls = "text-sm px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 
 function Card({ task, overlay = false }) {
   const p = priorityInfo(task.priority);
+  const { fields, people } = useContext(FieldsContext);
+  const chips = fields.map((f) => [f, fieldText(f, task.fields?.[f.id], people)]).filter(([, t]) => t).slice(0, 3);
   return (
     <div className={`bg-white border border-gray-200 rounded-md p-3 select-none ${overlay ? "shadow-xl rotate-1" : "hover:border-gray-300"}`}>
       <Link to={`/tasks/${task.id}`} onClick={(e) => overlay && e.preventDefault()} className="text-sm text-gray-900 hover:underline block">
@@ -28,6 +31,9 @@ function Card({ task, overlay = false }) {
         {task.checklist.total > 0 && (
           <span className="flex items-center gap-0.5" title="Checklist"><ListChecks size={10} /> {task.checklist.done}/{task.checklist.total}</span>
         )}
+        {chips.map(([f, t]) => (
+          <span key={f.id} className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 max-w-28 truncate" title={`${f.name}: ${t}`}>{t}</span>
+        ))}
         {task.assignee && (
           <span className="ml-auto w-5 h-5 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-semibold" title={task.assignee.name || task.assignee.email}>
             {(task.assignee.name || task.assignee.email)[0].toUpperCase()}
@@ -132,6 +138,7 @@ export default function ProjectBoard({ team, project }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const base = `/teams/${team.id}/projects/${project.id}`;
+  const people = useMembersOf(board?.project?.company_id);
 
   const load = useCallback(async () => {
     try {
@@ -198,6 +205,7 @@ export default function ProjectBoard({ team, project }) {
         <ColumnEditor team={team} project={project} statuses={board.statuses} onClose={() => setEditing(false)}
           onSaved={() => { setEditing(false); load(); }} />
       )}
+      <FieldsContext.Provider value={{ fields: board.fields || [], people: people.byId }}>
       <DndContext sensors={sensors} collisionDetection={closestCorners}
         onDragStart={({ active: a }) => setActive(board.tasks.find((t) => t.id === a.id))}
         onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActive(null); load(); }}>
@@ -206,6 +214,7 @@ export default function ProjectBoard({ team, project }) {
         </div>
         <DragOverlay>{active ? <Card task={active} overlay /> : null}</DragOverlay>
       </DndContext>
+      </FieldsContext.Provider>
       <p className="text-xs text-gray-400">Finished cards stay for two weeks. Subtasks live inside their card.</p>
     </div>
   );

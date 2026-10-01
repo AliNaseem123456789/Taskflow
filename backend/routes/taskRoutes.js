@@ -27,6 +27,7 @@ import {
   addWatcher,
   removeWatcher,
 } from "../controllers/taskDetailController.js";
+import { getTaskFields, setTaskFields, getTaskApprovals, requestApproval } from "../controllers/workflowController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -46,6 +47,11 @@ router.get("/inbox", auth, getInbox);
 router.get("/", auth, getTasks);
 router.post("/", auth, addTask);
 router.get("/:id", auth, getTask);
+// Custom field values and approvals on a task
+router.get("/:id/fields", auth, getTaskFields);
+router.put("/:id/fields", auth, setTaskFields);
+router.get("/:id/approvals", auth, getTaskApprovals);
+router.post("/:id/approvals", auth, requestApproval);
 router.put("/:id", auth, updateTask);
 router.delete("/:id", auth, deleteTask);
 

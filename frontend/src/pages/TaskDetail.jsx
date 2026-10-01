@@ -9,6 +9,8 @@ import { aiRequest, useAI } from "../utils/ai";
 import { localDate, shiftDate } from "../utils/date";
 import { Sparkles } from "lucide-react";
 import TaskTime from "../components/TaskTime";
+import TaskFields from "../components/TaskFields";
+import TaskApprovals from "../components/TaskApprovals";
 
 // AI suggests subtasks (with owners) and checklist items; you tick what to keep
 function Breakdown({ task, opts, onAdded }) {
@@ -291,6 +293,10 @@ export default function TaskDetail() {
           {ai.on && perms.canComment && <Breakdown task={task} opts={opts} onAdded={load} />}
         </Section>
       )}
+
+      {task.project_id && <TaskFields task={task} opts={opts} />}
+
+      {task.company_id && <TaskApprovals task={task} opts={opts} />}
 
       <TaskTime task={task} opts={opts} canLog={perms.canComment} />
 
