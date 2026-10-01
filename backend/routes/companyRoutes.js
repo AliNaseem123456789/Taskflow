@@ -50,6 +50,16 @@ import {
   getOpenWork,
 } from "../controllers/companyLifeController.js";
 import { getCompanyUpdates } from "../controllers/knowledgeController.js";
+import {
+  getTimeOff,
+  requestTimeOff,
+  decideTimeOff,
+  cancelTimeOff,
+  getHolidays,
+  addHoliday,
+  deleteHoliday,
+  getWorkload,
+} from "../controllers/timeOffController.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -105,5 +115,15 @@ router.get("/:id/announcements/:aid/reads", authenticate, getAnnouncementReads);
 router.delete("/:id/announcements/:aid", authenticate, deleteAnnouncement);
 router.get("/:id/members/:userId/open-work", authenticate, getOpenWork);
 router.get("/:id/updates", authenticate, getCompanyUpdates);
+
+// time off, holidays and workload
+router.get("/:id/time-off", authenticate, getTimeOff);
+router.post("/:id/time-off", authenticate, requestTimeOff);
+router.post("/:id/time-off/:timeOffId/decide", authenticate, decideTimeOff);
+router.post("/:id/time-off/:timeOffId/cancel", authenticate, cancelTimeOff);
+router.get("/:id/holidays", authenticate, getHolidays);
+router.post("/:id/holidays", authenticate, addHoliday);
+router.delete("/:id/holidays/:holidayId", authenticate, deleteHoliday);
+router.get("/:id/workload", authenticate, getWorkload);
 
 export default router;

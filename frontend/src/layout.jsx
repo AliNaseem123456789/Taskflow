@@ -30,6 +30,8 @@ const AUTH_ROUTES = [
   "/updates",
   "/decisions",
   "/wiki",
+  "/time-off",
+  "/workload",
   "/integrations",
   "/company",
   "/companies",

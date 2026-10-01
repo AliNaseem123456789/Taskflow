@@ -141,7 +141,7 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
                   {!members.some((m) => m.id === form.assignee_id) && task.assignee && (
                     <option value={form.assignee_id}>{task.assignee.name || task.assignee.email}</option>
                   )}
-                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
+                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}{m.away_until ? ` (away until ${m.away_until.slice(5)})` : ""}</option>)}
                 </select>
               </div>
               <div>
@@ -151,7 +151,7 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
                   {!members.some((m) => m.id === form.reviewer_id) && task.reviewer && (
                     <option value={form.reviewer_id}>{task.reviewer.name || task.reviewer.email}</option>
                   )}
-                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
+                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}{m.away_until ? ` (away until ${m.away_until.slice(5)})` : ""}</option>)}
                 </select>
               </div>
               <div>

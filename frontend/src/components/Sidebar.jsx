@@ -26,6 +26,8 @@ import {
   Activity,
   Scale,
   BookOpen,
+  Plane,
+  Gauge,
 } from "lucide-react";
 
 const navItems = [
@@ -51,6 +53,8 @@ const companyItems = [
   { icon: Activity,   label: "Project updates", path: "/updates" },
   { icon: Scale,      label: "Decisions",     path: "/decisions" },
   { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
+  { icon: Plane,      label: "Time off",      path: "/time-off" },
+  { icon: Gauge,      label: "Workload",      path: "/workload" },
   { icon: Building2,  label: "People & settings", path: "/company" },
 ];
 

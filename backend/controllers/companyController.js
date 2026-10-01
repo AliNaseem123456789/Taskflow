@@ -3,6 +3,7 @@ import { can, getCompanyMember, COMPANY_ROLES } from "../utils/permissions.js";
 import { audit } from "../utils/audit.js";
 import { WORK_TYPES } from "../utils/workTypes.js";
 import { handOverWork } from "./companyLifeController.js";
+import { awayToday } from "./timeOffController.js";
 
 // Optional hand-over when someone goes: { reassign_to } must be an active member who can take work
 const readHandOver = async (companyId, body, leavingId) => {
@@ -151,7 +152,10 @@ export const getMembers = async (req, res) => {
   if (!includeFormer) query = query.eq("status", "active");
   const { data, error } = await query.order("joined_at");
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data.map(({ users, ...m }) => ({ ...m, id: users.id, name: users.name, email: users.email, timezone: users.timezone })));
+  const away = await awayToday(req.params.id); // so "assign to" pickers can say who's off
+  res.json(data.map(({ users, ...m }) => ({
+    ...m, id: users.id, name: users.name, email: users.email, timezone: users.timezone, away_until: away[users.id] || null,
+  })));
 };
 
 // ── PUT /companies/:id/members/:userId { role?, job_title?, level?, manager_id?, skills? }

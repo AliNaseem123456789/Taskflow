@@ -137,7 +137,7 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
               <select className={smallInput} value={extra.assignee_id} onChange={setField("assignee_id")} title="Assign to">
                 <option value="">Assign to me</option>
                 {members.filter((m) => m.id !== me?.id).map((m) => (
-                  <option key={m.id} value={m.id}>{m.name || m.email}</option>
+                  <option key={m.id} value={m.id}>{m.name || m.email}{m.away_until ? ` (away until ${m.away_until.slice(5)})` : ""}</option>
                 ))}
               </select>
             </>
