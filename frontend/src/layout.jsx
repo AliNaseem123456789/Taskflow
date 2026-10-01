@@ -26,6 +26,7 @@ const AUTH_ROUTES = [
   "/join-company",
   "/inbox",
   "/announcements",
+  "/meetings",
   "/integrations",
   "/company",
   "/companies",

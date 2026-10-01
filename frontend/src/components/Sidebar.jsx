@@ -22,6 +22,7 @@ import {
   Building2,
   Inbox,
   Megaphone,
+  Video,
 } from "lucide-react";
 
 const navItems = [
@@ -80,7 +81,7 @@ export default function Sidebar({ onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems, ...(getWorkspace() ? [{ icon: Megaphone, label: "Announcements", path: "/announcements" }, { icon: Building2, label: "Company", path: "/company" }] : [])].map(({ icon: Icon, label, path }) => {
+        {[...navItems, ...(getWorkspace() ? [{ icon: Video, label: "Meetings", path: "/meetings" }, { icon: Megaphone, label: "Announcements", path: "/announcements" }, { icon: Building2, label: "Company", path: "/company" }] : [])].map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path ||
             (path === "/team" && location.pathname.startsWith("/team/"));
           return (

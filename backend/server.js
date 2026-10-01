@@ -16,11 +16,13 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import integrationRoutes from "./routes/integrationRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
+import meetingRoutes from "./routes/meetingRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
 import { runImportJob } from "./controllers/integrationController.js";
 import { runTransfersJob } from "./controllers/companyLifeController.js";
+import { runMeetingReminderJob, runMeetingSeriesJob } from "./controllers/meetingController.js";
 import { requestLogger } from "./middleware/logger.js";
 
 const app = express();
@@ -51,6 +53,7 @@ app.use("/notifications", notificationRoutes);
 app.use("/events", eventRoutes); // live updates (Server-Sent Events)
 app.use("/integrations", integrationRoutes);
 app.use("/companies", companyRoutes);
+app.use("/meetings", meetingRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
@@ -76,6 +79,14 @@ if (isMainWorker) {
     runRecurringJob().catch((e) => console.error("[Cron] recurring:", e.message));
   cron.schedule("5 * * * *", recurring);
   recurring();
+
+  // meetings: reminders shortly before, and the next meeting of each repeating series
+  cron.schedule("*/5 * * * *", () =>
+    runMeetingReminderJob().catch((e) => console.error("[Cron] meeting reminders:", e.message))
+  );
+  cron.schedule("15 * * * *", () =>
+    runMeetingSeriesJob().catch((e) => console.error("[Cron] meeting series:", e.message))
+  );
 
   // approved team moves whose date has come
   cron.schedule("10 * * * *", () =>
