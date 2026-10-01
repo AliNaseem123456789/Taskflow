@@ -29,7 +29,9 @@ import {
   Plane,
   Gauge,
   LineChart as LineChartIcon,
+  Lightbulb,
 } from "lucide-react";
+import { useAI } from "../utils/ai";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard",  path: "/dashboard" },
@@ -65,6 +67,7 @@ export default function Sidebar({ onClose }) {
   const location  = useLocation();
 
   const user = getStoredUser();
+  const ai = useAI();
 
   const handleLogout = () => logout();
 
@@ -101,7 +104,7 @@ export default function Sidebar({ onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems, ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
+        {[...navItems.slice(0, 10), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(10), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
           if (section)
             return <p key={section} className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{section}</p>;
           const active = location.pathname === path ||

@@ -114,9 +114,30 @@ def _wiki(_m, user):
     return {"answer": "Refunds are processed within 14 days.", "sources": [hit["id"], "made-up-id"], "found": True}
 
 
+def _solve(_m, user):
+    p = _payload(user)
+    overdue = p.get("open_work", {}).get("overdue", [])
+    heavy = [w["name"] for w in p.get("workload", []) if w.get("load") == "heavy"]
+    names = [x["name"] for x in p.get("people", [])]
+    return {"diagnosis": f"{len(overdue)} tasks are overdue" + (f" and {heavy[0]} is stretched." if heavy else "."),
+            "causes": [{"cause": "Too much on one person", "evidence": f"{heavy}"}, {"evidence": "no cause"}],
+            "plan": [{"step": "Rebalance work", "why": "spread load"}, {"step": "Weekly triage", "why": "catch slips"}],
+            "tasks": [{"title": "Move two tasks off the busiest person", "assignee_name": names[-1] if names else None, "due_date": "2026-10-06", "priority": "high"},
+                      {"title": "Set up weekly triage", "assignee_name": "Ghost", "due_date": "soon", "priority": "mega"}, {"title": ""}],
+            "questions": ["What is blocking the oldest task?"], "watch": ["Overdue count"]}
+
+
+def _summary(_m, user):
+    p = _payload(user)
+    s = p.get("stats", {})
+    return {"summary": f"You finished {s.get('done_count')} of {s.get('total_tasks')} tasks.",
+            "recommendations": [{"title": "Clear delays", "text": f"{s.get('delayed_count')} delayed."}, {"title": "x"}]}
+
+
 # canned JSON answers for the one-shot features
 CANNED: dict = {"breakdown": _breakdown, "quick_add": _parse, "suggest_assignee": _assign, "handover": _handover,
-                "meeting_notes": _notes, "retro_themes": _retro, "project_update": _project, "standup": _standup, "wiki_answer": _wiki}
+                "meeting_notes": _notes, "retro_themes": _retro, "project_update": _project, "standup": _standup, "wiki_answer": _wiki,
+                "solve_problem": _solve, "summary": _summary}
 
 
 @app.get("/log")

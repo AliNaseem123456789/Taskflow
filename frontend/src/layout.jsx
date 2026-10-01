@@ -34,6 +34,7 @@ const AUTH_ROUTES = [
   "/time-off",
   "/workload",
   "/analytics",
+  "/solve",
   "/integrations",
   "/company",
   "/companies",

@@ -3,11 +3,42 @@ import { RefreshCw, Sparkles } from "lucide-react";
 import ExportMenu from "../components/ExportMenu";
 import { exportJSON, exportCSV, exportPDF } from "../utils/export";
 import { apiRequest } from "../utils/api";
-import api from "../api/api";
 import { localDate } from "../utils/date";
+import { aiRequest, useAI } from "../utils/ai";
 
-// Optional external AI service (set VITE_AI_API_URL in frontend/.env)
-const AI_API_URL = import.meta.env.VITE_AI_API_URL;
+// "Write my weekly report" — a first-person draft from your own work, to copy into an email or chat
+function WeeklyReport() {
+  const [report, setReport] = useState(null);
+  const [state, setState] = useState("");
+  const write = async () => {
+    setState("Writing…");
+    try {
+      const r = await aiRequest("/api/standup/draft", { kind: "weekly" }, { company: "" });
+      setReport(r.empty ? null : r);
+      setState(r.empty ? "Nothing in the last 7 days to report." : "");
+    } catch (err) {
+      setState(err.message);
+    }
+  };
+  const text = report && [report.highlight, report.done && `Done:\n${report.done}`, report.in_progress && `In progress:\n${report.in_progress}`,
+    report.next && `Next:\n${report.next}`, report.blockers && `Blockers:\n${report.blockers}`].filter(Boolean).join("\n\n");
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+      <div className="flex items-center gap-2">
+        <Sparkles size={16} className="text-gray-400" />
+        <h2 className="text-sm font-semibold text-gray-900 flex-1">Weekly report</h2>
+        <button onClick={write} className="text-xs px-3 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50">{report ? "Write again" : "Write my weekly report"}</button>
+      </div>
+      {state && <p className="text-xs text-gray-500 mt-2">{state}</p>}
+      {report && (
+        <>
+          <pre className="mt-3 text-sm text-gray-700 whitespace-pre-wrap font-[inherit]">{text}</pre>
+          <button onClick={() => navigator.clipboard?.writeText(text)} className="mt-2 text-xs text-gray-500 hover:text-gray-900 underline">Copy</button>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function ReportsPage({ userId }) {
   const [tasks, setTasks] = useState([]);
@@ -16,6 +47,7 @@ export default function ReportsPage({ userId }) {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dateRange] = useState({ startDate: null, endDate: null });
+  const ai = useAI();
 
   const getUserId = useCallback(() => {
     if (userId) return userId;
@@ -52,12 +84,13 @@ export default function ReportsPage({ userId }) {
     if (!uid || !tasks.length) return;
     try {
       setSummaryLoading(true);
-      if (!AI_API_URL) throw new Error("No AI service configured");
-      const { data } = await api.post(`${AI_API_URL}/api/ai-summary`, {
-        user_id: uid,
-        start_date: dateRange.startDate,
-        end_date: dateRange.endDate,
-      });
+      if (!ai.on) throw new Error("AI is off");
+      // the AI service uses your login (it no longer trusts a user id), over the period these tasks cover
+      const dates = tasks.map((t) => t.date_logged).filter(Boolean).sort();
+      const data = await aiRequest("/api/ai-summary", {
+        start_date: dateRange.startDate || dates[0] || localDate(),
+        end_date: dateRange.endDate || localDate(),
+      }, { company: "" });
       setAiSummary(data);
     } catch {
       // Fallback
@@ -85,7 +118,7 @@ export default function ReportsPage({ userId }) {
     } finally {
       setSummaryLoading(false);
     }
-  }, [getUserId, tasks, dateRange]);
+  }, [getUserId, tasks, dateRange, ai.on]);
 
   useEffect(() => {
     if (getUserId()) fetchTasks();
@@ -146,6 +179,8 @@ export default function ReportsPage({ userId }) {
           {error}
         </div>
       )}
+
+      {ai.on && <WeeklyReport />}
 
       {/* AI Summary */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">

@@ -30,6 +30,15 @@ Run these once, in order. Each is safe to run again.
 | `backend/sql/003_stage3_tasks.sql` | due date, priority, blocker, repeat, goals, notifications |
 | `backend/sql/004_stage4_teams.sql` | invites, scheduled digest, projects, standups |
 | `backend/sql/005_stage5_integrations.sql` | SMS/Slack/push, Google/GitHub/Jira |
+| `backend/sql/006_phaseA1_companies.sql` | companies, roles, workspaces (moves existing teams into companies) |
+| `backend/sql/007_phaseA2_structure.sql` | departments, sub-teams, org chart |
+| `backend/sql/008_phaseA3_joining.sql` | company invites, email-domain join, onboarding checklists |
+| `backend/sql/009_phaseA4_work.sql` | reviewers, watchers, subtasks, checklists, dependencies, project columns |
+| `backend/sql/010_phaseA5_company_life.sql` | team moves, announcements |
+| `backend/sql/011_phaseB1_meetings.sql` | meetings, 1:1s, retros |
+| `backend/sql/012_phaseB2_updates_decisions_wiki.sql` | project updates, decision log, wiki |
+| `backend/sql/013_phaseB3_timeoff_workload.sql` | time off, company holidays |
+| `backend/sql/014_phaseC_ai.sql` | AI usage (daily limits) |
 | `backend/sql/security_enable_rls.sql` | **recommended** — read the comment at the top first |
 
 `000_sessions_table.sql` is reference only (that table already exists).
@@ -40,6 +49,19 @@ Run these once, in order. Each is safe to run again.
 cd backend  && npm run dev     # http://localhost:5000
 cd frontend && npm run dev     # http://localhost:5174
 ```
+
+Optional — the AI service (Python):
+
+```bash
+cd chatbot
+python -m venv .venv && .venv\Scripts\activate     # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env                              # then put your Groq key in AI_API_KEY
+uvicorn app.main:app --port 8000 --reload           # http://localhost:8000/api/health
+```
+
+and set `VITE_AI_API_URL=http://localhost:8000` in `frontend/.env`. Without it, AI buttons stay hidden.
+Daily AI limits live in `backend/.env`: `AI_DAILY_LIMIT_USER`, `AI_DAILY_LIMIT_COMPANY`. More in `chatbot/README.md`.
 
 ---
 
