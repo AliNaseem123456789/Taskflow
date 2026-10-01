@@ -28,6 +28,7 @@ import {
   BookOpen,
   Plane,
   Gauge,
+  Briefcase,
   LineChart as LineChartIcon,
   Lightbulb,
 } from "lucide-react";
@@ -54,6 +55,7 @@ const companyItems = [
   { icon: Video,      label: "Meetings",      path: "/meetings" },
   { icon: Megaphone,  label: "Announcements", path: "/announcements" },
   { icon: Activity,   label: "Project updates", path: "/updates" },
+  { icon: Briefcase,  label: "Portfolios",    path: "/portfolios" },
   { icon: Scale,      label: "Decisions",     path: "/decisions" },
   { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
   { icon: Plane,      label: "Time off",      path: "/time-off" },

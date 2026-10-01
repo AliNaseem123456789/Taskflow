@@ -28,6 +28,7 @@ const AUTH_ROUTES = [
   "/inbox",
   "/announcements",
   "/meetings",
+  "/portfolios",
   "/updates",
   "/decisions",
   "/wiki",

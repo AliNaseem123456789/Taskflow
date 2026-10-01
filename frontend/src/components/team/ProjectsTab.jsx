@@ -9,6 +9,7 @@ import TaskMeta from "../TaskMeta";
 import { useCompanyPeople } from "../../utils/companyPeople";
 import { ROLE_LABELS } from "../../utils/workspace";
 import ProjectBoard from "./ProjectBoard";
+import ProjectTimeline from "./ProjectTimeline";
 
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#ec4899", "#6b7280"];
 
@@ -93,14 +94,14 @@ function ProjectTasks({ team, project, onBack }) {
       {project.description && <p className="text-sm text-gray-500 mb-4">{project.description}</p>}
       <ProjectPeople team={team} project={project} />
       <div className="flex gap-1 mb-3">
-        {[["board", "Board"], ["list", "List"]].map(([k, label]) => (
+        {[["board", "Board"], ["timeline", "Timeline"], ["list", "List"]].map(([k, label]) => (
           <button key={k} onClick={() => setView(k)}
             className={`px-3 py-1 text-xs rounded-md ${view === k ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
             {label}
           </button>
         ))}
       </div>
-      {view === "board" ? <ProjectBoard team={team} project={project} /> : (
+      {view === "board" ? <ProjectBoard team={team} project={project} /> : view === "timeline" ? <ProjectTimeline team={team} project={project} /> : (
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
         {tasks === null && <p className="p-4 text-sm text-gray-400">Loading…</p>}
         {tasks?.length === 0 && <p className="p-8 text-center text-sm text-gray-400">No tasks yet. Pick this project when adding or editing a task.</p>}
@@ -134,6 +135,12 @@ export default function ProjectsTab({ team }) {
     [team.id]
   );
   useEffect(() => { load(); setOpen(null); }, [load]);
+  // deep link from a portfolio: ?project=<id> opens it once the list is in
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("project");
+    const hit = wanted && projects?.find((p) => p.id === wanted);
+    if (hit) setOpen((cur) => cur || hit);
+  }, [projects]);
   useLiveEvent(["project", "task"], load);
 
   const create = async (e) => {

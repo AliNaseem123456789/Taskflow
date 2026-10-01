@@ -52,6 +52,7 @@ import {
   closeSprint,
   updateSprintSettings,
 } from "../controllers/sprintController.js";
+import { getTimeline, createMilestone, updateMilestone, deleteMilestone } from "../controllers/planningController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -99,6 +100,10 @@ router.get("/:id/projects/:projectId/board", auth, getProjectBoard);
 router.put("/:id/projects/:projectId/board/move", auth, moveOnBoard);
 router.put("/:id/projects/:projectId/statuses", auth, saveProjectStatuses);
 router.get("/:id/projects/:projectId/updates", auth, getProjectUpdates);
+router.get("/:id/projects/:projectId/timeline", auth, getTimeline);
+router.post("/:id/projects/:projectId/milestones", auth, createMilestone);
+router.put("/:id/projects/:projectId/milestones/:milestoneId", auth, updateMilestone);
+router.delete("/:id/projects/:projectId/milestones/:milestoneId", auth, deleteMilestone);
 
 // Sprints
 router.get("/:id/sprints", auth, getSprints);

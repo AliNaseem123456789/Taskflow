@@ -248,7 +248,12 @@ export default function TeamPage() {
     apiRequest("/teams", "GET", null)
       .then((data) => {
         setTeams(data || []);
-        if (data?.length > 0) setActiveTeam(data[0]);
+        // deep link: /team?team=<id>&tab=projects&project=<id>
+        const q = new URLSearchParams(window.location.search);
+        const wanted = data?.find((t) => t.id === q.get("team"));
+        if (wanted) setActiveTeam(wanted);
+        else if (data?.length > 0) setActiveTeam(data[0]);
+        if (q.get("tab") && TABS.some(([k]) => k === q.get("tab"))) setTab(q.get("tab"));
       })
       .catch(() => {})
       .finally(() => setLoading(false));

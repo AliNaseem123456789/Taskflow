@@ -95,6 +95,13 @@ const readProject = (body, partial = false) => {
     fields.color = body.color;
   }
   if (body.archived !== undefined) fields.archived = !!body.archived;
+  for (const key of ["start_date", "target_date"]) {
+    if (body[key] === undefined) continue;
+    if (body[key] && !/^\d{4}-\d{2}-\d{2}$/.test(body[key])) return { error: "Dates look like 2026-10-01" };
+    fields[key] = body[key] || null;
+  }
+  if (fields.start_date && fields.target_date && fields.target_date < fields.start_date)
+    return { error: "The target date can't be before the start" };
   if (body.visibility !== undefined) {
     if (!["team", "company"].includes(body.visibility)) return { error: "Visibility must be team or company" };
     fields.visibility = body.visibility;
