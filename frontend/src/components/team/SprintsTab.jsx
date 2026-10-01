@@ -5,6 +5,7 @@ import { Flag, Play, Plus, Square, Trash2 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { useLiveEvent } from "../../utils/live";
 import { STATUS_BADGE } from "../../utils/taskMeta";
+import { fmtMinutes } from "../../utils/timer";
 
 const fmt = (d) => new Date(`${d}T12:00:00`).toLocaleDateString([], { month: "short", day: "numeric" });
 const axis = { tick: { fill: "var(--viz-axis)", fontSize: 11 }, axisLine: false, tickLine: false };
@@ -157,6 +158,12 @@ export default function SprintsTab({ team }) {
             <span className="text-xs text-gray-600">{current.done} / {current.total} {u} · {current.done_count}/{current.task_count} tasks</span>
           </div>
           {current.unestimated > 0 && <p className="text-[11px] text-amber-700 mt-1">{current.unestimated} task(s) have no estimate.</p>}
+          {current.time_minutes > 0 && (
+            <p className="text-[11px] text-gray-500 mt-1">
+              Time logged: <b className="font-medium text-gray-800">{fmtMinutes(current.time_minutes)}</b>
+              {unit === "hours" && current.total > 0 && <> of {current.total}h estimated ({Math.round((current.time_minutes / 60 / current.total) * 100)}%)</>}
+            </p>
+          )}
           <div className="grid lg:grid-cols-2 gap-5 mt-4">
             <div>
               <p className="text-xs font-medium text-gray-500 mb-1">Burndown ({unit})</p>

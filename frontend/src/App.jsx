@@ -39,6 +39,7 @@ import Decisions from "./pages/Decisions";
 import SolveProblem from "./pages/SolveProblem";
 import Analytics from "./pages/Analytics";
 import Portfolios from "./pages/Portfolios";
+import Timesheet from "./pages/Timesheet";
 import TimeOff from "./pages/TimeOff";
 import Workload from "./pages/Workload";
 import Wiki from "./pages/Wiki";
@@ -81,6 +82,7 @@ const appRoutes = [
   ["/analytics",       <Analytics />],
   ["/portfolios",      <Portfolios />],
   ["/portfolios/:id",  <Portfolios />],
+  ["/timesheet",       <Timesheet />],
   ["/solve",           <SolveProblem />],
 ];
 

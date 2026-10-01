@@ -3,6 +3,7 @@ import { logout, getStoredUser } from "../api/api";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
+import RunningTimer from "./RunningTimer";
 import { getWorkspace } from "../api/api";
 import {
   LayoutDashboard,
@@ -31,6 +32,7 @@ import {
   Briefcase,
   LineChart as LineChartIcon,
   Lightbulb,
+  Timer,
 } from "lucide-react";
 import { useAI } from "../utils/ai";
 
@@ -40,6 +42,7 @@ const navItems = [
   { icon: CheckSquare,     label: "My Dones",   path: "/mydones"   },
   { icon: Columns3,        label: "Board",      path: "/board"     },
   { icon: Calendar,        label: "Calendar",   path: "/calendar"  },
+  { icon: Timer,           label: "Timesheet",  path: "/timesheet" },
   { icon: Target,          label: "Goals",      path: "/goals"     },
   { icon: Search,          label: "Search",     path: "/search"    },
   { icon: Users,           label: "Team",       path: "/team"      },
@@ -103,10 +106,11 @@ export default function Sidebar({ onClose }) {
       </div>
 
       <WorkspaceSwitcher onNavigate={onClose} />
+      <RunningTimer onNavigate={onClose} />
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems.slice(0, 10), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(10), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
+        {[...navItems.slice(0, 11), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(11), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
           if (section)
             return <p key={section} className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{section}</p>;
           const active = location.pathname === path ||

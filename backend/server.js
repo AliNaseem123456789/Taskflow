@@ -20,6 +20,7 @@ import meetingRoutes from "./routes/meetingRoutes.js";
 import decisionRoutes from "./routes/decisionRoutes.js";
 import wikiRoutes from "./routes/wikiRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import timeRoutes from "./routes/timeRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
@@ -60,6 +61,7 @@ app.use("/meetings", meetingRoutes);
 app.use("/decisions", decisionRoutes);
 app.use("/wiki", wikiRoutes);
 app.use("/ai", aiRoutes);
+app.use("/time", timeRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

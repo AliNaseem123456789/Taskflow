@@ -8,6 +8,7 @@ import { taskAccess } from "../utils/permissions.js";
 import { audit } from "../utils/audit.js";
 import { publishToTeam } from "../utils/events.js";
 import { addDays, todayIn } from "../utils/time.js";
+import { minutesOnTasks } from "./timeController.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || "");
@@ -95,6 +96,7 @@ export const getSprint = async (req, res) => {
     sprint, team: ctx.team, can_manage: ctx.canManage, tasks, ...stats(tasks),
     burndown: burndown(sprint, tasks, today),
     days_left: sprint.status === "active" ? Math.max(0, Math.round((new Date(sprint.end_date) - new Date(today)) / 86400000)) : null,
+    time_minutes: await minutesOnTasks(tasks.map((t) => t.id)), // estimate vs actual
   });
 };
 
