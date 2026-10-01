@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Activity, ChevronDown, ChevronRight } from "lucide-react";
 import { apiRequest } from "../utils/api";
+import { aiRequest, useAI } from "../utils/ai";
+import { Sparkles } from "lucide-react";
 import { getWorkspace } from "../api/api";
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
@@ -27,6 +29,20 @@ function ProjectHistory({ project, onPosted }) {
   const [data, setData] = useState(null);
   const [form, setForm] = useState({ health: project.latest?.health || "on_track", summary: "", highlights: "", risks: "", next_steps: "" });
   const [error, setError] = useState("");
+  const ai = useAI();
+  const [drafting, setDrafting] = useState(false);
+  const draft = async () => {
+    setDrafting(true);
+    setError("");
+    try {
+      const d = await aiRequest("/api/projects/update-draft", { team_id: project.team_id, project_id: project.id });
+      setForm({ health: d.health, summary: d.summary || "", highlights: d.highlights || "", risks: d.risks || "", next_steps: d.next_steps || "" });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDrafting(false);
+    }
+  };
   const load = useCallback(() => apiRequest(base).then(setData).catch((err) => setError(err.message)), [base]);
   useEffect(() => { load(); }, [load]);
 
@@ -56,6 +72,11 @@ function ProjectHistory({ project, onPosted }) {
                 {h.label}
               </button>
             ))}
+            {ai.on && (
+              <button type="button" onClick={draft} disabled={drafting} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50">
+                <Sparkles size={12} /> {drafting ? "Drafting…" : "Draft with AI"}
+              </button>
+            )}
             <span className="ml-auto"><Stats s={data.current} /></span>
           </div>
           <textarea required rows={2} className={`${inputCls} w-full`} placeholder="Where things stand, in a sentence or two" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />

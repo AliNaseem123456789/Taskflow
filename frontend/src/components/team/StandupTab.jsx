@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Wand2 } from "lucide-react";
+import { Wand2, Sparkles } from "lucide-react";
+import { aiRequest, useAI } from "../../utils/ai";
 import { apiRequest } from "../../utils/api";
 import { getStoredUser } from "../../api/api";
 import { useLiveEvent } from "../../utils/live";
@@ -35,6 +36,20 @@ export default function StandupTab({ team, date }) {
 
   useEffect(() => { load(); }, [load]);
   useLiveEvent("standup", load);
+
+  const ai = useAI();
+  // AI writes a readable standup from your tasks (you edit before posting)
+  const writeWithAI = async () => {
+    setStatus("Writing…");
+    try {
+      const d = await aiRequest("/api/standup/draft", { kind: "standup", team_id: team.id });
+      if (d.empty) return setStatus("No recent tasks to write from.");
+      setForm({ yesterday: d.yesterday || "", today: d.today || "", blockers: d.blockers || "" });
+      setStatus("Drafted — edit and post.");
+    } catch (err) {
+      setStatus(err.message);
+    }
+  };
 
   const fillFromTasks = async () => {
     const draft = await apiRequest(`/teams/${team.id}/standups/draft`).catch(() => null);
@@ -74,6 +89,11 @@ export default function StandupTab({ team, date }) {
           <button type="button" onClick={fillFromTasks} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900" title="Fill empty answers from your tasks">
             <Wand2 size={12} /> Fill from my tasks
           </button>
+          {ai.on && isToday && (
+            <button type="button" onClick={writeWithAI} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900">
+              <Sparkles size={12} /> Write it with AI
+            </button>
+          )}
         </div>
         {QUESTIONS.map(([key, label]) => (
           <div key={key}>

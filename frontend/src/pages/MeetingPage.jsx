@@ -6,6 +6,7 @@ import api from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
 import { useLiveEvent } from "../utils/live";
 import { kindLabel } from "../utils/meetings";
+import MeetingAI from "../components/MeetingAI";
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
@@ -239,6 +240,8 @@ export default function MeetingPage() {
             onSave={(notes) => apiRequest(base, "PUT", { notes })} />
         </div>
       </div>
+
+      <MeetingAI meeting={m} onChanged={load} />
 
       {m.kind === "retro" && (
         <div className="grid md:grid-cols-3 gap-3">

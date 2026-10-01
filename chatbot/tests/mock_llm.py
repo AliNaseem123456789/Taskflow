@@ -71,8 +71,52 @@ def _handover(_m, user):
             "risks": ["Deadline on Friday"], "talk_to": others[:1]}
 
 
+def _notes(_m, user):
+    p = _payload(user)
+    first = (p.get("attendees") or [None])[0]
+    return {"summary": f"We discussed {p.get('title')}.", "decisions": ["Ship on Friday", ""],
+            "actions": [{"text": "Write release notes", "owner_name": first, "due_date": "2026-10-08"},
+                        {"text": "Call the vendor", "owner_name": "Stranger Danger", "due_date": "next week"}, {"text": ""}],
+            "open_questions": ["Who signs off?"]}
+
+
+def _retro(_m, user):
+    cards = _payload(user).get("cards", [])
+    good = [c["id"] for c in cards if c["column"] == "went_well"]
+    bad = [c["id"] for c in cards if c["column"] != "went_well"]
+    return {"themes": [{"name": "Delivery", "card_ids": good, "tone": "good"}, {"name": "Process", "card_ids": bad + ["fake-id"], "tone": "bad"},
+                       {"name": "Empty", "card_ids": ["nope"]}],
+            "actions": [{"text": "Fix the flaky CI", "owner_name": (_payload(user).get("attendees") or [None])[0]}]}
+
+
+def _project(_m, user):
+    p = _payload(user)
+    overdue = sum(1 for c in p.get("board", []) if c.get("overdue"))
+    return {"health": "at_risk" if overdue else "great", "summary": f"{len(p.get('board', []))} cards, {overdue} overdue.",
+            "highlights": "Design done", "risks": "Overdue work" if overdue else "", "next_steps": "Finish QA"}
+
+
+def _standup(_m, user):
+    p = _payload(user)
+    done = [t["title"] for t in p.get("finished", [])]
+    doing = [t["title"] for t in p.get("in_progress", [])]
+    return {"yesterday": "\n".join("• " + d for d in done), "today": "\n".join("• " + d for d in doing), "blockers": "",
+            "done": "\n".join("• " + d for d in done), "in_progress": "\n".join("• " + d for d in doing), "next": "• Plan next week",
+            "highlight": f"Finished {len(done)} things."}
+
+
+def _wiki(_m, user):
+    p = _payload(user)
+    pages = p.get("pages", [])
+    hit = next((pg for pg in pages if "refund" in pg["body"].lower()), None)
+    if not hit:
+        return {"answer": "The wiki doesn't say.", "sources": [], "found": False}
+    return {"answer": "Refunds are processed within 14 days.", "sources": [hit["id"], "made-up-id"], "found": True}
+
+
 # canned JSON answers for the one-shot features
-CANNED: dict = {"breakdown": _breakdown, "quick_add": _parse, "suggest_assignee": _assign, "handover": _handover}
+CANNED: dict = {"breakdown": _breakdown, "quick_add": _parse, "suggest_assignee": _assign, "handover": _handover,
+                "meeting_notes": _notes, "retro_themes": _retro, "project_update": _project, "standup": _standup, "wiki_answer": _wiki}
 
 
 @app.get("/log")

@@ -5,6 +5,51 @@ import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
 import Markdown from "../components/Markdown";
+import { aiRequest, useAI } from "../utils/ai";
+import { Sparkles } from "lucide-react";
+
+// "Ask the wiki": an answer from the pages you can see, with links to them
+function AskWiki({ onOpen }) {
+  const ai = useAI();
+  const [q, setQ] = useState("");
+  const [res, setRes] = useState(null);
+  const [busy, setBusy] = useState(false);
+  if (!ai.on) return null;
+  const ask = async (e) => {
+    e.preventDefault();
+    if (q.trim().length < 3) return;
+    setBusy(true);
+    try {
+      setRes(await aiRequest("/api/wiki/ask", { question: q }));
+    } catch (err) {
+      setRes({ answer: err.message, sources: [], found: false });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mb-5">
+      <form onSubmit={ask} className="flex gap-2">
+        <div className="relative flex-1">
+          <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input className={`${inputCls} w-full pl-8`} placeholder="Ask the wiki, e.g. How do refunds work?" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <button disabled={busy} className="px-3 py-2 bg-gray-900 text-white text-sm rounded-md disabled:opacity-50">{busy ? "Looking…" : "Ask"}</button>
+      </form>
+      {res && (
+        <div className="mt-2 bg-white border border-gray-200 rounded-lg p-4">
+          <Markdown text={res.answer} />
+          {res.sources.length > 0 && (
+            <p className="text-xs text-gray-500 mt-2">From: {res.sources.map((s, i) => (
+              <span key={s.id}>{i > 0 && ", "}<button className="underline" onClick={() => onOpen(s.id)}>{s.title}</button></span>
+            ))}</p>
+          )}
+          {!res.found && <p className="text-xs text-gray-400 mt-1">Nothing in the wiki answers this yet — maybe write a page?</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
@@ -148,6 +193,8 @@ export default function Wiki() {
           </button>
         )}
       </div>
+
+      <AskWiki onOpen={(pid) => navigate(`/wiki/${pid}`)} />
 
       <div className="flex flex-col md:flex-row gap-6">
         <aside className="md:w-60 shrink-0 bg-white border border-gray-200 rounded-lg p-2 self-start">
