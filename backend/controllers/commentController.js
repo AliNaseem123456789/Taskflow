@@ -1,56 +1,64 @@
 import { supabase } from "../config/supabase.js";
 import { notify } from "./notificationController.js";
 import { sendTo } from "../utils/events.js";
+import { taskAccess } from "../utils/permissions.js";
 
 // Mentions are written as @[Name](user-id) by the comment box
 const MENTION_RE = /@\[([^\]]{1,80})\]\(([0-9a-f-]{36})\)/g;
 const mentionedIds = (text) => [...new Set([...text.matchAll(MENTION_RE)].map((m) => m[2]))];
 const plainText = (text) => text.replace(MENTION_RE, "@$1");
 
-// Everyone who can see a task: its owner + members of the owner's teams
+// Everyone who can see a task (for @mentions and comment notifications).
+// Personal task: just its creator. Company task: people whose role reaches it.
 export async function peopleWhoCanSee(taskId) {
-  const { data: task } = await supabase.from("tasks").select("user_id").eq("id", taskId).maybeSingle();
+  const { data: task } = await supabase
+    .from("tasks").select("id, user_id, assignee_id, company_id, team_id, project_id").eq("id", taskId).maybeSingle();
   if (!task) return [];
-  const { data: ownerTeams } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", task.user_id);
-  const teamIds = (ownerTeams || []).map((t) => t.team_id);
 
   let userIds = [task.user_id];
-  if (teamIds.length) {
-    const { data: members } = await supabase.from("team_members").select("user_id").in("team_id", teamIds);
-    userIds = [...new Set([...userIds, ...(members || []).map((m) => m.user_id)])];
+  if (task.company_id) {
+    const { data: members } = await supabase
+      .from("company_members").select("user_id, role, department_id")
+      .eq("company_id", task.company_id).eq("status", "active");
+    const { data: team } = task.team_id
+      ? await supabase.from("teams").select("department_id").eq("id", task.team_id).maybeSingle()
+      : { data: null };
+    const [{ data: teamPeople }, { data: projectPeople }, { data: project }] = await Promise.all([
+      task.team_id ? supabase.from("team_members").select("user_id").eq("team_id", task.team_id) : { data: [] },
+      task.project_id ? supabase.from("project_members").select("user_id").eq("project_id", task.project_id) : { data: [] },
+      task.project_id ? supabase.from("projects").select("visibility").eq("id", task.project_id).maybeSingle() : { data: null },
+    ]);
+    const onTeam = new Set((teamPeople || []).map((m) => m.user_id));
+    const onProject = new Set((projectPeople || []).map((m) => m.user_id));
+    const openProject = project?.visibility === "company";
+
+    userIds = (members || [])
+      .filter((m) =>
+        ["owner", "admin", "viewer"].includes(m.role) ||
+        m.user_id === task.user_id || m.user_id === task.assignee_id ||
+        onTeam.has(m.user_id) || onProject.has(m.user_id) ||
+        (m.role === "manager" && (!m.department_id || m.department_id === team?.department_id)) ||
+        (openProject && ["member", "manager"].includes(m.role))
+      )
+      .map((m) => m.user_id);
+  } else if (task.assignee_id) {
+    userIds.push(task.assignee_id);
   }
-  const { data: users } = await supabase.from("users").select("id, name, email").in("id", userIds);
-  return (users || []).map((u) => ({ ...u, is_owner: u.id === task.user_id }));
+
+  const { data: users } = await supabase.from("users").select("id, name, email").in("id", [...new Set(userIds)]);
+  return (users || []).map((u) => ({ ...u, is_owner: u.id === (task.assignee_id || task.user_id) }));
 }
 
-// A user can see a task if they own it, or share a team with its owner.
+// Kept for older callers: can this user see the task?
 export async function canAccessTask(taskId, userId) {
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("user_id")
-    .eq("id", taskId)
-    .maybeSingle();
-  if (!task) return false;
-  if (task.user_id === userId) return true;
-
-  const { data: myTeams } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", userId);
-  const teamIds = (myTeams || []).map((m) => m.team_id);
-  if (!teamIds.length) return false;
-
-  const { data: shared } = await supabase
-    .from("team_members")
-    .select("id")
-    .eq("user_id", task.user_id)
-    .in("team_id", teamIds)
-    .limit(1);
-  return shared?.length > 0;
+  const { data: task } = await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle();
+  return (await taskAccess(task, userId)).canView;
 }
+
+const accessFor = async (taskId, userId) => {
+  const { data: task } = await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle();
+  return taskAccess(task, userId);
+};
 
 export const getComments = async (req, res) => {
   const { taskId } = req.params;
@@ -70,8 +78,9 @@ export const addComment = async (req, res) => {
   const { taskId } = req.params;
   const { content } = req.body;
   if (!content?.trim()) return res.status(400).json({ error: "Content required" });
-  if (!(await canAccessTask(taskId, req.user.id)))
-    return res.status(404).json({ error: "Task not found" });
+  const access = await accessFor(taskId, req.user.id);
+  if (!access.canView) return res.status(404).json({ error: "Task not found" });
+  if (!access.canComment) return res.status(403).json({ error: "Viewers can't comment" });
 
   const { data, error } = await supabase
     .from("task_comments")
@@ -121,8 +130,9 @@ export const deleteComment = async (req, res) => {
 
 export const toggleReaction = async (req, res) => {
   const { taskId } = req.params;
-  if (!(await canAccessTask(taskId, req.user.id)))
-    return res.status(404).json({ error: "Task not found" });
+  const access = await accessFor(taskId, req.user.id);
+  if (!access.canView) return res.status(404).json({ error: "Task not found" });
+  if (!access.canComment) return res.status(403).json({ error: "Viewers can't react" });
 
   const { data: existing } = await supabase
     .from("task_reactions")

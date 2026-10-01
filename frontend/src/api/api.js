@@ -23,6 +23,32 @@ export const setAccessToken = (token) => {
   else localStorage.removeItem("accessToken");
 };
 
+// ── Workspace: "" = Personal, otherwise a company id ─────────────────────────
+// Sent to the backend as X-Company-Id on every request.
+
+export const getWorkspace = () => {
+  try {
+    return localStorage.getItem("workspace") || "";
+  } catch {
+    return "";
+  }
+};
+
+export const setWorkspace = (companyId) => {
+  try {
+    if (companyId) localStorage.setItem("workspace", companyId);
+    else localStorage.removeItem("workspace");
+  } catch {
+    // private mode: stays for this page only
+  }
+};
+
+// Switch and start fresh on that workspace's dashboard
+export const switchWorkspace = (companyId) => {
+  setWorkspace(companyId);
+  window.location.href = "/dashboard";
+};
+
 // ── Session helpers used across the app ──────────────────────────────────────
 
 export const isLoggedIn = () => !!accessToken;
@@ -53,6 +79,7 @@ export const saveLogin = (data) => {
 const clearLocalSession = () => {
   setAccessToken(null);
   setStoredUser(null);
+  setWorkspace("");
   localStorage.removeItem("token"); // old key from before the session rework
 };
 
@@ -70,6 +97,10 @@ export const logout = async () => {
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  const ws = getWorkspace();
+  // a request that sets X-Company-Id itself wins ("" = force Personal)
+  if (config.headers["X-Company-Id"] === "") delete config.headers["X-Company-Id"];
+  else if (ws && !config.headers["X-Company-Id"]) config.headers["X-Company-Id"] = ws;
   return config;
 });
 
@@ -111,6 +142,13 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
     const isAuthCall = /\/auth\/(login|signup|refresh|logout)/.test(original?.url || "");
+
+    // removed from the chosen company (or it was deleted): back to Personal
+    if (error.response?.status === 403 && /not a member of this company/.test(error.response?.data?.error || "")) {
+      setWorkspace("");
+      window.location.href = "/dashboard";
+      return Promise.reject(error);
+    }
 
     if (error.response?.status !== 401 || original._retried || isAuthCall) {
       return Promise.reject(error);

@@ -2,6 +2,7 @@ import { supabase } from "../config/supabase.js";
 import { getMembership } from "./teamController.js";
 import { todayIn, addDays } from "../utils/time.js";
 import { publishToTeam } from "../utils/events.js";
+import { myWorkFilter } from "../utils/permissions.js";
 
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 const clean = (v) => String(v ?? "").trim().slice(0, 2000) || null;
@@ -36,17 +37,17 @@ export const getStandupDraft = async (req, res) => {
   const today = todayIn(req.user.timezone);
 
   // "Yesterday" = the most recent earlier day with Done tasks (so Monday picks up Friday)
-  const { data: lastDay } = await supabase.from("tasks").select("date_logged").eq("user_id", req.user.id)
+  const { data: lastDay } = await supabase.from("tasks").select("date_logged").or(myWorkFilter(req.user.id))
     .eq("status", "Done").lt("date_logged", today).gte("date_logged", addDays(today, -7))
     .order("date_logged", { ascending: false }).limit(1);
   const previous = lastDay?.[0]?.date_logged;
 
   const [{ data: done }, { data: open }] = await Promise.all([
     previous
-      ? supabase.from("tasks").select("title").eq("user_id", req.user.id)
+      ? supabase.from("tasks").select("title").or(myWorkFilter(req.user.id))
           .eq("status", "Done").eq("date_logged", previous).limit(15)
       : Promise.resolve({ data: [] }),
-    supabase.from("tasks").select("title, blocker").eq("user_id", req.user.id)
+    supabase.from("tasks").select("title, blocker").or(myWorkFilter(req.user.id))
       .neq("status", "Done").order("date_logged", { ascending: false }).limit(15),
   ]);
   const bullet = (rows) => rows.map((r) => `• ${r.title}`).join("\n");
@@ -68,7 +69,9 @@ export const saveStandup = async (req, res) => {
   const date = isDate(req.body.date) ? req.body.date : today;
   if (date > today) return res.status(400).json({ error: "Can't post a standup for the future" });
 
+  const { data: team } = await supabase.from("teams").select("company_id").eq("id", id).single();
   const row = {
+    company_id: team.company_id,
     team_id: id,
     user_id: req.user.id,
     date,

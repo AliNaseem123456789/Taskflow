@@ -4,10 +4,12 @@ import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
 import { useMyProjects } from "../utils/projects";
+import { useCompanyPeople } from "../utils/companyPeople";
+import { getStoredUser } from "../api/api";
 
 const smallInput =
   "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
-const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "" };
+const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "", team_id: "", assignee_id: "" };
 
 export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [title, setTitle] = useState("");
@@ -18,6 +20,12 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   const [showMore, setShowMore] = useState(false);
   const [extra, setExtra] = useState(EMPTY_EXTRA);
   const projects = useMyProjects();
+  const { inCompany, members, teams } = useCompanyPeople();
+  const me = getStoredUser();
+  // a company task lands on your team by default (if you're on exactly one)
+  useEffect(() => {
+    if (inCompany && teams.length === 1) setExtra((x) => (x.team_id ? x : { ...x, team_id: teams[0].id }));
+  }, [inCompany, teams]);
   const setField = (key) => (e) => setExtra((x) => ({ ...x, [key]: e.target.value }));
 
 
@@ -120,6 +128,20 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
           <select className={smallInput} value={extra.recurrence} onChange={setField("recurrence")} title="Repeat">
             {RECURRENCES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
+          {inCompany && (
+            <>
+              <select className={smallInput} value={extra.team_id} onChange={setField("team_id")} title="Team">
+                <option value="">No team</option>
+                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <select className={smallInput} value={extra.assignee_id} onChange={setField("assignee_id")} title="Assign to">
+                <option value="">Assign to me</option>
+                {members.filter((m) => m.id !== me?.id).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name || m.email}</option>
+                ))}
+              </select>
+            </>
+          )}
           {projects.length > 0 && (
             <select className={`${smallInput} col-span-2 sm:col-span-4`} value={extra.project_id} onChange={setField("project_id")} title="Team project">
               <option value="">No project</option>

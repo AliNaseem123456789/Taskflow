@@ -7,6 +7,7 @@ import AddTaskForm from "../components/AddTaskForm";
 import TaskList from "../components/TaskList";
 import { apiRequest } from "../utils/api";
 import { localDate } from "../utils/date";
+import { getWorkspace, getStoredUser } from "../api/api";
 
 export default function MyDones() {
   const [tasks, setTasks] = useState([]);
@@ -28,7 +29,9 @@ export default function MyDones() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const data = await apiRequest(`/tasks?date=${dateStr}`, "GET", null);
+        // in a company, My Dones = company work assigned to me
+        const mine = getWorkspace() ? "&assignee=me" : "";
+        const data = await apiRequest(`/tasks?date=${dateStr}${mine}`, "GET", null);
         setTasks(data);
       } catch (err) {
         console.error("Fetch tasks failed:", err.message);
@@ -54,7 +57,8 @@ export default function MyDones() {
         tags,
         date_logged: dateStr,
       });
-      setTasks((prev) => [newTask, ...prev]);
+      if (!newTask.assignee_id || newTask.assignee_id === getStoredUser()?.id)
+        setTasks((prev) => [newTask, ...prev]);
       setShowAddForm(false);
     } catch (err) {
       console.error("Failed to add task:", err.message);

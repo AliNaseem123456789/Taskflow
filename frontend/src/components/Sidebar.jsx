@@ -2,6 +2,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { logout, getStoredUser } from "../api/api";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
+import { getWorkspace } from "../api/api";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -17,6 +19,7 @@ import {
   Columns3,
   Target,
   Plug,
+  Building2,
 } from "lucide-react";
 
 const navItems = [
@@ -70,9 +73,11 @@ export default function Sidebar({ onClose }) {
         </div>
       </div>
 
+      <WorkspaceSwitcher onNavigate={onClose} />
+
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ icon: Icon, label, path }) => {
+        {[...navItems, ...(getWorkspace() ? [{ icon: Building2, label: "Company", path: "/company" }] : [])].map(({ icon: Icon, label, path }) => {
           const active = location.pathname === path ||
             (path === "/team" && location.pathname.startsWith("/team/"));
           return (

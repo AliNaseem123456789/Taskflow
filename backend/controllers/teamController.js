@@ -7,47 +7,113 @@ import { hashToken } from "../utils/session.js";
 import { publishToTeam } from "../utils/events.js";
 import { postToSlack } from "../utils/slack.js";
 import { decrypt } from "../utils/secrets.js";
+import { teamAccess, getCompanyMember, can } from "../utils/permissions.js";
+import { audit } from "../utils/audit.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Access to a team, in the old shape the team pages use:
+// null = can't see it; role "admin" = may manage it (team lead, company admin,
+// or the department's manager); role "member" = may see it.
 export async function getMembership(teamId, userId) {
-  const { data } = await supabase
-    .from("team_members")
-    .select("role")
-    .eq("team_id", teamId)
-    .eq("user_id", userId)
-    .single();
-  return data; // null if not a member
+  const access = await teamAccess(teamId, userId);
+  if (!access.canView) return null;
+  return { role: access.canManage ? "admin" : "member", teamRole: access.teamRole, access };
 }
+
+// The team's work: company tasks put on this team, plus company tasks with no
+// team that are assigned to its members. Returns a PostgREST or() filter.
+const teamWorkFilter = (teamId, memberIds) =>
+  memberIds.length
+    ? `team_id.eq.${teamId},and(team_id.is.null,assignee_id.in.(${memberIds.join(",")}))`
+    : `team_id.eq.${teamId}`;
+
+// Add someone to a company (as member) if they aren't in it yet; re-activates former members.
+export const ensureCompanyMember = async (companyId, userId, role = "member") => {
+  const { data: row } = await supabase
+    .from("company_members").select("id, status").eq("company_id", companyId).eq("user_id", userId).maybeSingle();
+  if (!row) {
+    await supabase.from("company_members").insert([{ company_id: companyId, user_id: userId, role }]);
+  } else if (row.status === "left") {
+    await supabase.from("company_members")
+      .update({ status: "active", left_at: null, role }).eq("id", row.id);
+  }
+};
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 
+// GET /teams — my teams (in the chosen company, or everywhere in Personal)
 export const getMyTeams = async (req, res) => {
-  const { data, error } = await supabase
+  let query = supabase
     .from("team_members")
-    .select("role, joined_at, teams(id, name, invite_code, owner_id, created_at)")
+    .select("role, joined_at, teams!inner(id, name, invite_code, owner_id, created_at, company_id, department_id, parent_team_id, companies(name))")
     .eq("user_id", req.user.id);
+  if (req.company) query = query.eq("teams.company_id", req.company.id);
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data.map((m) => ({ ...m.teams, role: m.role })));
+
+  // only teams of companies I'm still active in
+  const { data: active } = await supabase
+    .from("company_members").select("company_id").eq("user_id", req.user.id).eq("status", "active");
+  const activeIds = new Set((active || []).map((a) => a.company_id));
+  res.json(
+    data
+      .filter((m) => activeIds.has(m.teams.company_id))
+      .map((m) => ({
+        ...m.teams,
+        company_name: m.teams.companies?.name,
+        companies: undefined,
+        role: m.role === "lead" ? "admin" : "member", // "admin" = can manage (older pages)
+        team_role: m.role,
+      }))
+  );
 };
 
+// POST /teams { name, department_id?, parent_team_id? }
+// In a company: admins create teams there. In Personal: a company with the
+// same name is created first (so a freelancer group is one click).
 export const createTeam = async (req, res) => {
-  const { name } = req.body;
-  if (!name?.trim()) return res.status(400).json({ error: "Team name required" });
+  const name = String(req.body.name || "").trim();
+  if (!name) return res.status(400).json({ error: "Team name required" });
+
+  let companyId = req.company?.id;
+  if (companyId) {
+    if (!can(req.company.member, "structure.edit"))
+      return res.status(403).json({ error: "Only company admins create teams" });
+  } else {
+    const { data: me } = await supabase.from("users").select("email_verified").eq("id", req.user.id).single();
+    if (me?.email_verified === false)
+      return res.status(403).json({ error: "Verify your email before creating a team" });
+    const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "team"}-${crypto.randomBytes(3).toString("hex")}`;
+    const { data: company, error } = await supabase
+      .from("companies").insert([{ name, slug, created_by: req.user.id }]).select("id").single();
+    if (error) return res.status(500).json({ error: error.message });
+    companyId = company.id;
+    await supabase.from("company_members").insert([{ company_id: companyId, user_id: req.user.id, role: "owner" }]);
+    await audit(req, companyId, "company.created", "company", companyId, { name, via: "team" });
+  }
+
+  // optional placement (checked to be in the same company)
+  const placement = {};
+  for (const [key, table] of [["department_id", "departments"], ["parent_team_id", "teams"]]) {
+    if (!req.body[key]) continue;
+    const { data: row } = await supabase.from(table).select("company_id").eq("id", req.body[key]).maybeSingle();
+    if (row?.company_id !== companyId) return res.status(400).json({ error: `That ${key.replace("_id", "").replace("_", " ")} isn't in this company` });
+    placement[key] = req.body[key];
+  }
 
   const { data: team, error } = await supabase
     .from("teams")
-    .insert([{ name: name.trim(), owner_id: req.user.id }])
+    .insert([{ name, owner_id: req.user.id, company_id: companyId, ...placement }])
     .select("*")
     .single();
   if (error) return res.status(500).json({ error: error.message });
 
-  // Creator becomes admin
-  await supabase
-    .from("team_members")
-    .insert([{ team_id: team.id, user_id: req.user.id, role: "admin" }]);
+  // Creator leads it
+  await supabase.from("team_members").insert([{ team_id: team.id, user_id: req.user.id, role: "lead" }]);
+  await audit(req, companyId, "team.created", "team", team.id, { name });
 
-  res.status(201).json(team);
+  res.status(201).json({ ...team, role: "admin", team_role: "lead" });
 };
 
 export const getTeam = async (req, res) => {
@@ -62,16 +128,18 @@ export const getTeam = async (req, res) => {
     .single();
   if (error) return res.status(404).json({ error: "Team not found" });
 
-  const { data: members } = await supabase
-    .from("team_members")
-    .select("role, joined_at, users(id, email, name)")
-    .eq("team_id", id);
+  const [{ data: members }, { data: company }] = await Promise.all([
+    supabase.from("team_members").select("role, joined_at, users(id, email, name)").eq("team_id", id),
+    supabase.from("companies").select("id, name").eq("id", team.company_id).maybeSingle(),
+  ]);
 
   res.json({
     ...team,
+    company,
+    can_manage: membership.role === "admin",
     slack_webhook: undefined,
     slack_connected: !!team.slack_webhook,
-    members: members.map((m) => ({ ...m.users, role: m.role, joined_at: m.joined_at })),
+    members: members.map((m) => ({ ...m.users, role: m.role === "lead" ? "admin" : "member", team_role: m.role, joined_at: m.joined_at })),
     my_role: membership.role,
   });
 };
@@ -92,24 +160,33 @@ export const joinTeam = async (req, res) => {
     .select("id")
     .eq("team_id", team.id)
     .eq("user_id", req.user.id)
-    .single();
-  if (existing) return res.status(400).json({ error: "You are already a member of this team" });
+    .maybeSingle();
+  const inCompany = await getCompanyMember(team.company_id, req.user.id);
+  if (existing && inCompany) return res.status(400).json({ error: "You are already a member of this team" });
 
-  await supabase
-    .from("team_members")
-    .insert([{ team_id: team.id, user_id: req.user.id, role: "member" }]);
+  // an invite code lets you into the company too (as a member)
+  await ensureCompanyMember(team.company_id, req.user.id);
+  if (!existing)
+    await supabase.from("team_members").insert([{ team_id: team.id, user_id: req.user.id, role: "member" }]);
+  await audit(req, team.company_id, "member.joined", "team", team.id, { via: "invite_code" });
 
   res.json({ success: true, team });
   publishToTeam(team.id, "team", {});
 };
 
+// POST /teams/:id/leave — leaves the team, not the company
 export const leaveTeam = async (req, res) => {
   const { id } = req.params;
-  const { data: team } = await supabase
-    .from("teams").select("owner_id").eq("id", id).single();
-  if (team?.owner_id === req.user.id)
-    return res.status(400).json({ error: "Owner cannot leave. Delete the team instead." });
-
+  const { data: me } = await supabase.from("team_members").select("role").eq("team_id", id).eq("user_id", req.user.id).maybeSingle();
+  if (!me) return res.status(400).json({ error: "You're not on this team" });
+  if (me.role === "lead") {
+    const { count } = await supabase.from("team_members").select("id", { count: "exact", head: true })
+      .eq("team_id", id).eq("role", "lead");
+    const { count: others } = await supabase.from("team_members").select("id", { count: "exact", head: true })
+      .eq("team_id", id).neq("user_id", req.user.id);
+    if (count === 1 && others > 0)
+      return res.status(400).json({ error: "Make someone else a lead before you leave" });
+  }
   await supabase.from("team_members").delete().eq("team_id", id).eq("user_id", req.user.id);
   res.json({ success: true });
 };
@@ -127,8 +204,9 @@ export const removeMember = async (req, res) => {
 export const updateMemberRole = async (req, res) => {
   const { id, userId } = req.params;
   const { role } = req.body;
-  if (!["admin", "member"].includes(role))
-    return res.status(400).json({ error: "Invalid role" });
+  // the pages send admin/member; stored as lead/member
+  const teamRole = { admin: "lead", lead: "lead", member: "member" }[role];
+  if (!teamRole) return res.status(400).json({ error: "Invalid role" });
 
   const membership = await getMembership(id, req.user.id);
   if (!membership || membership.role !== "admin")
@@ -136,7 +214,7 @@ export const updateMemberRole = async (req, res) => {
 
   const { data, error } = await supabase
     .from("team_members")
-    .update({ role })
+    .update({ role: teamRole })
     .eq("team_id", id)
     .eq("user_id", userId)
     .select("*")
@@ -147,8 +225,8 @@ export const updateMemberRole = async (req, res) => {
 
 export const regenerateInvite = async (req, res) => {
   const { id } = req.params;
-  const { data: team } = await supabase.from("teams").select("owner_id").eq("id", id).single();
-  if (team?.owner_id !== req.user.id) return res.status(403).json({ error: "Owner only" });
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Team leads only" });
 
   const newCode = crypto.randomBytes(4).toString("hex").slice(0, 6).toUpperCase();
   const { data, error } = await supabase
@@ -161,12 +239,16 @@ export const regenerateInvite = async (req, res) => {
   res.json(data);
 };
 
+// DELETE /teams/:id — company admins (or whoever created the team). Tasks stay in the company.
 export const deleteTeam = async (req, res) => {
   const { id } = req.params;
-  const { data: team } = await supabase.from("teams").select("owner_id").eq("id", id).single();
-  if (team?.owner_id !== req.user.id) return res.status(403).json({ error: "Owner only" });
+  const access = await teamAccess(id, req.user.id);
+  if (!access.team) return res.status(404).json({ error: "Team not found" });
+  if (!(can(access.member, "structure.edit") || (access.team.owner_id === req.user.id && access.teamRole === "lead")))
+    return res.status(403).json({ error: "Only company admins can delete teams" });
 
   await supabase.from("teams").delete().eq("id", id);
+  await audit(req, access.team.company_id, "team.deleted", "team", id, { name: access.team.name });
   res.json({ success: true });
 };
 
@@ -183,12 +265,14 @@ export const getTeamFeed = async (req, res) => {
   if (membErr) return res.status(500).json({ error: membErr.message });
 
   const memberIds = members.map((m) => m.user_id);
-  if (!memberIds.includes(req.user.id)) return res.status(403).json({ error: "Not a member" });
+  const access = await teamAccess(id, req.user.id);
+  if (!access.canView) return res.status(403).json({ error: "Not a member" });
 
   let query = supabase
     .from("tasks")
-    .select("*, users(id, name, email), projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
-    .in("user_id", memberIds);
+    .select("*, creator:users!user_id(id, name, email), assignee:users!assignee_id(id, name, email), projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
+    .eq("company_id", access.team.company_id)
+    .or(teamWorkFilter(id, memberIds));
 
   if (date) {
     query = query.eq("date_logged", date);
@@ -212,13 +296,14 @@ export const getTeamFeed = async (req, res) => {
     task_reactions: undefined,
   }));
 
-  // Group tasks by member
+  // Group tasks by who they're assigned to
   const memberMap = {};
   members.forEach((m) => {
-    memberMap[m.user_id] = { ...m.users, role: m.role, tasks: [] };
+    memberMap[m.user_id] = { ...m.users, role: m.role === "lead" ? "admin" : "member", team_role: m.role, tasks: [] };
   });
   normalised.forEach((t) => {
-    if (memberMap[t.user_id]) memberMap[t.user_id].tasks.push(t);
+    const who = t.assignee_id || t.user_id;
+    if (memberMap[who]) memberMap[who].tasks.push(t);
   });
 
   res.json(Object.values(memberMap));
@@ -236,23 +321,25 @@ export const getTeamStats = async (req, res) => {
     .eq("team_id", id);
 
   const memberIds = members?.map((m) => m.user_id) || [];
-  if (!memberIds.includes(req.user.id)) return res.status(403).json({ error: "Not a member" });
+  const access = await teamAccess(id, req.user.id);
+  if (!access.canView) return res.status(403).json({ error: "Not a member" });
 
   const range = monthRange(month || monthIn(req.user.timezone));
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("user_id, status, date_logged")
-    .in("user_id", memberIds)
+    .select("user_id, assignee_id, status, date_logged")
+    .eq("company_id", access.team.company_id)
+    .or(teamWorkFilter(id, memberIds))
     .gte("date_logged", range.start)
     .lte("date_logged", range.end);
 
   const stats = members.map((mem) => {
-    const userTasks = tasks?.filter((t) => t.user_id === mem.user_id) || [];
+    const userTasks = tasks?.filter((t) => (t.assignee_id || t.user_id) === mem.user_id) || [];
     const done = userTasks.filter((t) => t.status === "Done").length;
     return {
       ...mem.users,
-      role: mem.role,
+      role: mem.role === "lead" ? "admin" : "member",
       total: userTasks.length,
       done,
       doing: userTasks.filter((t) => t.status === "Doing").length,
@@ -270,7 +357,7 @@ export const getTeamStats = async (req, res) => {
 // Builds the digest text for one team and emails every member.
 // `date` is the day to report on (YYYY-MM-DD).
 const sendDigest = async (teamId, date) => {
-  const { data: team } = await supabase.from("teams").select("name, slack_webhook").eq("id", teamId).single();
+  const { data: team } = await supabase.from("teams").select("name, slack_webhook, company_id").eq("id", teamId).single();
   const { data: members } = await supabase
     .from("team_members")
     .select("user_id, users(email, name)")
@@ -278,13 +365,13 @@ const sendDigest = async (teamId, date) => {
   const memberIds = members.map((m) => m.user_id);
 
   const [{ data: tasks }, { data: standups }] = await Promise.all([
-    supabase.from("tasks").select("user_id, title, status, blocker, projects(name)")
-      .in("user_id", memberIds).eq("date_logged", date),
+    supabase.from("tasks").select("user_id, assignee_id, title, status, blocker, projects(name)")
+      .eq("company_id", team.company_id).or(teamWorkFilter(teamId, memberIds)).eq("date_logged", date),
     supabase.from("standups").select("*").eq("team_id", teamId).eq("date", date),
   ]);
 
   const sections = members.map(({ user_id, users: user }) => {
-    const mine = tasks?.filter((t) => t.user_id === user_id) || [];
+    const mine = tasks?.filter((t) => (t.assignee_id || t.user_id) === user_id) || [];
     const standup = standups?.find((st) => st.user_id === user_id);
     const lines = [`${user.name || user.email}:`];
     if (mine.length)
@@ -398,8 +485,11 @@ export const createInvite = async (req, res) => {
 
   const { data: team } = await supabase.from("teams").select("name").eq("id", id).single();
   const { data: existingUser } = await supabase.from("users").select("id").ilike("email", email.replace(/[\\%_]/g, "\\$&")).maybeSingle();
-  if (existingUser && (await getMembership(id, existingUser.id)))
-    return res.status(400).json({ error: "That person is already in the team" });
+  if (existingUser) {
+    const { data: onTeam } = await supabase.from("team_members").select("id")
+      .eq("team_id", id).eq("user_id", existingUser.id).maybeSingle();
+    if (onTeam) return res.status(400).json({ error: "That person is already in the team" });
+  }
 
   const raw = crypto.randomBytes(24).toString("hex");
   const { data: invite, error } = await supabase
@@ -493,7 +583,11 @@ export const acceptInvite = async (req, res) => {
       error: `This invite is for ${invite.email}. Log in with that email to accept it.`,
     });
 
-  if (!(await getMembership(invite.team_id, req.user.id))) {
+  const { data: invitedTeam } = await supabase.from("teams").select("company_id").eq("id", invite.team_id).single();
+  await ensureCompanyMember(invitedTeam.company_id, req.user.id);
+  const { data: onTeam } = await supabase.from("team_members").select("id")
+    .eq("team_id", invite.team_id).eq("user_id", req.user.id).maybeSingle();
+  if (!onTeam) {
     const { error } = await supabase
       .from("team_members")
       .insert([{ team_id: invite.team_id, user_id: req.user.id, role: "member" }]);

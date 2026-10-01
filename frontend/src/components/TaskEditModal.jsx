@@ -4,6 +4,7 @@ import TagInput from "./TagInput";
 import { apiRequest } from "../utils/api";
 import { STATUSES, PRIORITIES, RECURRENCES } from "../utils/taskMeta";
 import { useMyProjects } from "../utils/projects";
+import { useCompanyPeople } from "../utils/companyPeople";
 
 const inputCls =
   "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
@@ -21,7 +22,11 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     blocker: task.blocker || "",
     recurrence: task.recurrence || "",
     project_id: task.project_id || "",
+    team_id: task.team_id || "",
+    assignee_id: task.assignee_id || "",
   });
+  const { members, teams } = useCompanyPeople();
+  const isCompanyTask = !!task.company_id;
   const projects = useMyProjects();
   const [tags, setTags] = useState(task.tags || []);
   const [allTags, setAllTags] = useState([]);
@@ -52,8 +57,10 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     setSaving(true);
     setError("");
     try {
+      const { team_id, assignee_id, ...rest } = form;
       const updated = await apiRequest(`/tasks/${task.id}`, "PUT", {
-        ...form,
+        ...rest,
+        ...(isCompanyTask ? { team_id: form.project_id ? undefined : team_id, assignee_id } : {}),
         tags: tags.map((t) => t.id),
       });
       onSaved(updated);
@@ -125,6 +132,28 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
               <p className="text-xs text-gray-400 mt-1">A new copy is added as "Doing" each day it repeats.</p>
             )}
           </div>
+          {isCompanyTask && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Assigned to</label>
+                <select className={inputCls} value={form.assignee_id} onChange={set("assignee_id")}>
+                  {!members.some((m) => m.id === form.assignee_id) && task.assignee && (
+                    <option value={form.assignee_id}>{task.assignee.name || task.assignee.email}</option>
+                  )}
+                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Team</label>
+                <select className={inputCls} value={form.team_id} onChange={set("team_id")} disabled={!!form.project_id}
+                  title={form.project_id ? "The project decides the team" : ""}>
+                  <option value="">No team</option>
+                  {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {form.team_id && !teams.some((t) => t.id === form.team_id) && <option value={form.team_id}>Current team</option>}
+                </select>
+              </div>
+            </div>
+          )}
           {(projects.length > 0 || form.project_id) && (
             <div>
               <label className={labelCls}>Team project</label>

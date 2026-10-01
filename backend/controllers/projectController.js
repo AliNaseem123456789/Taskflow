@@ -3,17 +3,20 @@ import { getMembership } from "./teamController.js";
 import { normaliseTasks } from "./taskController.js";
 import { withProgress } from "./goalController.js";
 import { publishToTeam } from "../utils/events.js";
+import { getCompanyMember, taskScope } from "../utils/permissions.js";
+import { audit } from "../utils/audit.js";
 
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
 
-// true if the user is in the team that owns this project
+// true if the user may see this project (and so add tasks to it)
 export const canUseProject = async (userId, projectId) => {
   const { data: project } = await supabase
-    .from("projects")
-    .select("team_id")
-    .eq("id", projectId)
-    .maybeSingle();
-  return !!project && !!(await getMembership(project.team_id, userId));
+    .from("projects").select("id, team_id, company_id").eq("id", projectId).maybeSingle();
+  if (!project) return false;
+  const member = await getCompanyMember(project.company_id, userId);
+  if (!member) return false;
+  const scope = await taskScope(member);
+  return scope.all || scope.projectIds.includes(project.id) || scope.teamIds.includes(project.team_id);
 };
 
 const memberIdsOf = async (teamId) => {
@@ -21,19 +24,32 @@ const memberIdsOf = async (teamId) => {
   return (data || []).map((m) => m.user_id);
 };
 
+// progress scope for a team's goals
+const teamScope = async (teamId) => {
+  const { data: team } = await supabase.from("teams").select("company_id").eq("id", teamId).single();
+  return { teamId, companyId: team.company_id, memberIds: await memberIdsOf(teamId) };
+};
+
 // ── Projects ─────────────────────────────────────────────────────────────────
 
-// GET /teams/projects/mine -> active projects from all my teams (for the task form)
+// GET /teams/projects/mine -> active projects I can add tasks to, in the
+// chosen company (the task form's "Project" list). Empty in Personal.
 export const getMyProjects = async (req, res) => {
-  const { data: mine } = await supabase.from("team_members").select("team_id").eq("user_id", req.user.id);
-  const teamIds = (mine || []).map((m) => m.team_id);
-  if (!teamIds.length) return res.json([]);
-  const { data, error } = await supabase
+  if (!req.company) return res.json([]);
+  const scope = await taskScope(req.company.member);
+  let query = supabase
     .from("projects")
-    .select("id, name, color, team_id, teams(name)")
-    .in("team_id", teamIds)
-    .eq("archived", false)
-    .order("name");
+    .select("id, name, color, team_id, company_id, visibility, teams(name)")
+    .eq("company_id", req.company.id)
+    .eq("archived", false);
+  if (!scope.all) {
+    const parts = [];
+    if (scope.teamIds.length) parts.push(`team_id.in.(${scope.teamIds.join(",")})`);
+    if (scope.projectIds.length) parts.push(`id.in.(${scope.projectIds.join(",")})`);
+    if (!parts.length) return res.json([]);
+    query = query.or(parts.join(","));
+  }
+  const { data, error } = await query.order("name");
   if (error) return res.status(500).json({ error: error.message });
   res.json(data.map((p) => ({ ...p, team_name: p.teams?.name, teams: undefined })));
 };
@@ -77,6 +93,10 @@ const readProject = (body, partial = false) => {
     fields.color = body.color;
   }
   if (body.archived !== undefined) fields.archived = !!body.archived;
+  if (body.visibility !== undefined) {
+    if (!["team", "company"].includes(body.visibility)) return { error: "Visibility must be team or company" };
+    fields.visibility = body.visibility;
+  }
   return { fields };
 };
 
@@ -88,12 +108,14 @@ export const createProject = async (req, res) => {
   const { fields, error: invalid } = readProject(req.body);
   if (invalid) return res.status(400).json({ error: invalid });
 
+  const { data: team } = await supabase.from("teams").select("company_id").eq("id", id).single();
   const { data, error } = await supabase
     .from("projects")
-    .insert([{ ...fields, team_id: id, created_by: req.user.id }])
+    .insert([{ ...fields, team_id: id, company_id: team.company_id, created_by: req.user.id }])
     .select("*")
     .single();
   if (error) return res.status(500).json({ error: error.message });
+  await audit(req, team.company_id, "project.created", "project", data.id, { name: data.name });
   res.status(201).json({ ...data, total: 0, done: 0 });
   publishToTeam(id, "project", {});
 };
@@ -133,16 +155,14 @@ export const getProjectTasks = async (req, res) => {
   const { id, projectId } = req.params;
   if (!(await getMembership(id, req.user.id))) return res.status(403).json({ error: "Not a team member" });
 
-  const memberIds = await memberIdsOf(id);
   const { data, error } = await supabase
     .from("tasks")
-    .select("*, users(id, name, email), projects!inner(id, name, color, team_id), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
+    .select("*, creator:users!user_id(id, name, email), assignee:users!assignee_id(id, name, email), projects!inner(id, name, color, team_id), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)")
     .eq("project_id", projectId)
     .eq("projects.team_id", id)
-    .in("user_id", memberIds)
     .order("date_logged", { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.users, users: undefined })));
+  res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.assignee || t.creator })));
 };
 
 // ── Team goals ───────────────────────────────────────────────────────────────
@@ -158,7 +178,7 @@ export const getTeamGoals = async (req, res) => {
     .eq("team_id", id)
     .order("created_at");
   if (error) return res.status(500).json({ error: error.message });
-  res.json(await withProgress(data, await memberIdsOf(id), req.user.timezone));
+  res.json(await withProgress(data, await teamScope(id), req.user.timezone));
 };
 
 // POST /teams/:id/goals (admin) { title, period, target, project_id? }
@@ -181,11 +201,11 @@ export const createTeamGoal = async (req, res) => {
 
   const { data, error } = await supabase
     .from("goals")
-    .insert([{ title, target, period: req.body.period, project_id: projectId, team_id: id, user_id: req.user.id }])
+    .insert([{ title, target, period: req.body.period, project_id: projectId, team_id: id, user_id: req.user.id, company_id: (await teamScope(id)).companyId }])
     .select("*, projects(id, name, color)")
     .single();
   if (error) return res.status(500).json({ error: error.message });
-  const [goal] = await withProgress([data], await memberIdsOf(id), req.user.timezone);
+  const [goal] = await withProgress([data], await teamScope(id), req.user.timezone);
   res.status(201).json(goal);
   publishToTeam(id, "goal", {});
 };

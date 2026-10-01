@@ -15,6 +15,7 @@ import goalRoutes from "./routes/goalRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import integrationRoutes from "./routes/integrationRoutes.js";
+import companyRoutes from "./routes/companyRoutes.js";
 import { runReminderJob } from "./controllers/emailController.js";
 import { runRecurringJob } from "./controllers/taskController.js";
 import { runTeamDigestJob } from "./controllers/teamController.js";
@@ -30,7 +31,11 @@ const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5174")
   .filter(Boolean);
 
 app.use(requestLogger);
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "X-Company-Id"],
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -44,6 +49,7 @@ app.use("/goals", goalRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/events", eventRoutes); // live updates (Server-Sent Events)
 app.use("/integrations", integrationRoutes);
+app.use("/companies", companyRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 

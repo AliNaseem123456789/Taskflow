@@ -15,7 +15,8 @@ const STATUS = {
 // ── Task row ──────────────────────────────────────────────────────────────────
 function TaskRow({ task, onStatusChange, onDelete, onUpdate, defaultShowComments }) {
   const userId = getStoredUser()?.id;
-  const isMine = !task.user_id || task.user_id === userId;
+  // creator or assignee may edit from lists; the server has the final say
+  const isMine = !task.user_id || task.user_id === userId || task.assignee_id === userId;
   const [showComments, setShowComments] = useState(!!defaultShowComments);
   const [editing, setEditing] = useState(false);
   const [liked, setLiked] = useState(() => !!task.reactions?.some((r) => r.user_id === userId));

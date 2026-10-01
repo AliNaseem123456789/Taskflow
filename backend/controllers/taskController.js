@@ -1,17 +1,30 @@
 import { supabase } from "../config/supabase.js";
 import { todayIn, dayNumber, monthRange, addDays } from "../utils/time.js";
-import { canAccessTask } from "./commentController.js";
-import { publishToTeammates } from "../utils/events.js";
-import { canUseProject } from "./projectController.js";
+import { sendTo, publishToTeam } from "../utils/events.js";
 import { syncTaskToGoogle } from "./integrationController.js";
+import {
+  can,
+  getCompanyMember,
+  taskScope,
+  scopeFilter,
+  scopeAllows,
+  taskAccess,
+  myWorkFilter,
+} from "../utils/permissions.js";
 
-// tell the owner's teammates (and the owner's other tabs) something changed
-const announce = (userId, action, taskId) =>
-  publishToTeammates(userId, "task", { action, id: taskId });
+// Tell whoever is looking at this task's team (or just the owner) it changed
+const announce = (task, action) => {
+  if (!task) return;
+  const data = { action, id: task.id };
+  if (task.team_id) publishToTeam(task.team_id, "task", data).catch(() => {});
+  sendTo([task.user_id, task.assignee_id].filter(Boolean), "task", data);
+};
 
-// Full select with tags + reactions
+// Full select with tags, reactions, project and the people on it.
+// (users is joined twice, so each join names its column.)
 const TASK_SELECT =
-  "*, projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji)";
+  "*, projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji), " +
+  "creator:users!user_id(id, name, email), assignee:users!assignee_id(id, name, email)";
 
 export const normaliseTasks = (data) =>
   data.map((t) => ({
@@ -30,6 +43,7 @@ const STATUSES = ["Done", "Doing", "Delayed"];
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 const RECURRENCES = ["daily", "weekdays", "weekly", "monthly"];
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isUuid = (v) => /^[0-9a-f-]{36}$/i.test(v);
 
 // Picks the task fields a client may set and checks them.
 // Returns { fields } or { error }.
@@ -39,7 +53,7 @@ const readTaskFields = (body, { requireTitle = false } = {}) => {
   if (body.title !== undefined || requireTitle) {
     const title = String(body.title || "").trim();
     if (!title) return { error: "Title is required" };
-    fields.title = title;
+    fields.title = title.slice(0, 300);
   }
   if (body.description !== undefined) fields.description = body.description || null;
 
@@ -64,12 +78,52 @@ const readTaskFields = (body, { requireTitle = false } = {}) => {
     if (!isDate(body.date_logged)) return { error: "Invalid date" };
     fields.date_logged = body.date_logged;
   }
-  if (body.project_id !== undefined) fields.project_id = body.project_id || null;
+  for (const key of ["project_id", "team_id", "assignee_id"]) {
+    if (body[key] === undefined) continue;
+    if (body[key] && !isUuid(String(body[key]))) return { error: `Invalid ${key}` };
+    fields[key] = body[key] || null;
+  }
   if (body.blocker !== undefined) {
     const b = String(body.blocker || "").trim();
     fields.blocker = b || null;
   }
   return { fields };
+};
+
+// Company task: check the team, project and assignee it's being put on.
+// Mutates `fields` (project decides the team). Returns an error string or null.
+const checkPlacement = async (fields, member, existing = null) => {
+  const companyId = member.company_id;
+  const scope = await taskScope(member);
+  const projectId = fields.project_id !== undefined ? fields.project_id : existing?.project_id;
+
+  if (fields.project_id) {
+    const { data: p } = await supabase
+      .from("projects").select("id, team_id, company_id").eq("id", fields.project_id).maybeSingle();
+    if (!p || p.company_id !== companyId) return "That project isn't in this company";
+    if (!(scope.all || scope.projectIds.includes(p.id) || scope.teamIds.includes(p.team_id)))
+      return "You can't add tasks to that project";
+    fields.team_id = p.team_id;
+  } else if (fields.team_id) {
+    const { data: t } = await supabase.from("teams").select("id, company_id").eq("id", fields.team_id).maybeSingle();
+    if (!t || t.company_id !== companyId) return "That team isn't in this company";
+    if (!(scope.all || scope.teamIds.includes(t.id))) return "You're not on that team";
+  }
+
+  if (member.role === "guest" && !projectId) return "Guests can only add tasks to projects shared with them";
+
+  if (fields.assignee_id) {
+    const a = await getCompanyMember(companyId, fields.assignee_id);
+    if (!a) return "The assignee isn't in this company";
+    if (a.role === "viewer") return "Viewers can't be assigned tasks";
+    if (a.role === "guest") {
+      const { data: pm } = projectId
+        ? await supabase.from("project_members").select("id").eq("project_id", projectId).eq("user_id", a.user_id).maybeSingle()
+        : { data: null };
+      if (!pm) return "Guests can only be assigned tasks in projects shared with them";
+    }
+  }
+  return null;
 };
 
 // Only tag ids that belong to this user
@@ -79,21 +133,33 @@ const ownTagIds = async (userId, tagIds) => {
   return (data || []).map((t) => t.id);
 };
 
-const loadTask = async (id) => {
+export const loadTask = async (id) => {
   const { data } = await supabase.from("tasks").select(TASK_SELECT).eq("id", id).single();
   return data ? normaliseTasks([data])[0] : null;
 };
 
+// "Which tasks you may see" for the chosen workspace:
+// Personal = my personal tasks + everything assigned to me anywhere;
+// Company = that company's tasks within my role's reach.
+// (Worked out first, then applied: a query builder must not pass through an
+// async function's return, or awaiting it runs the query.)
+const workspaceScope = async (req) =>
+  req.company ? await taskScope(req.company.member) : null;
+
+const inWorkspace = (query, req, scope) => {
+  if (!req.company) return query.or(myWorkFilter(req.user.id));
+  query = query.eq("company_id", req.company.id);
+  return scope.all ? query : query.or(scopeFilter(scope, req.user.id));
+};
+
 // ── GET /tasks ────────────────────────────────────────────────────────────────
 // ?date=YYYY-MM-DD | ?month=YYYY-MM | ?start=&end= | ?open=1 (not Done, any date)
+// in a company also: &team_id= &project_id= &assignee=me|<user id>
 
 export const getTasks = async (req, res) => {
-  const { date, month, start, end, open } = req.query;
+  const { date, month, start, end, open, team_id, project_id, assignee } = req.query;
   try {
-    let query = supabase
-      .from("tasks")
-      .select(TASK_SELECT)
-      .eq("user_id", req.user.id);
+    let query = inWorkspace(supabase.from("tasks").select(TASK_SELECT), req, await workspaceScope(req));
 
     if (date) {
       query = query.eq("date_logged", date);
@@ -104,6 +170,9 @@ export const getTasks = async (req, res) => {
       query = query.gte("date_logged", start).lte("date_logged", end);
     }
     if (open) query = query.neq("status", "Done");
+    if (team_id && isUuid(team_id)) query = query.eq("team_id", team_id);
+    if (project_id && isUuid(project_id)) query = query.eq("project_id", project_id);
+    if (assignee) query = query.eq("assignee_id", assignee === "me" ? req.user.id : assignee);
 
     const { data, error } = await query.order("date_logged", { ascending: true });
     if (error) throw error;
@@ -114,20 +183,30 @@ export const getTasks = async (req, res) => {
 };
 
 // ── GET /tasks/:id ────────────────────────────────────────────────────────────
-// Owner or teammates (used by notification links)
+// Anyone allowed to see it (used by notification links)
 
 export const getTask = async (req, res) => {
   try {
-    if (!(await canAccessTask(req.params.id, req.user.id)))
-      return res.status(404).json({ error: "Task not found" });
-    const { data, error } = await supabase
-      .from("tasks")
-      .select(`${TASK_SELECT}, users(id, name, email)`)
-      .eq("id", req.params.id)
-      .single();
-    if (error) throw error;
-    const [task] = normaliseTasks([data]);
-    res.json({ ...task, owner: data.users, users: undefined });
+    const task = await loadTask(req.params.id);
+    const access = await taskAccess(task, req.user.id);
+    if (!access.canView) return res.status(404).json({ error: "Task not found" });
+
+    let company = null;
+    if (task.company_id) {
+      const { data } = await supabase.from("companies").select("id, name").eq("id", task.company_id).single();
+      company = data;
+    }
+    res.json({
+      ...task,
+      owner: task.creator, // older pages read `owner`
+      company,
+      permissions: {
+        canEdit: access.canEdit,
+        canDelete: access.canDelete,
+        canAssign: access.canAssign,
+        canComment: access.canComment,
+      },
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -142,7 +221,7 @@ export const searchTasks = async (req, res) => {
   if (!text && !status && !priority && !tag && !from && !to) return res.json([]);
 
   try {
-    let query = supabase.from("tasks").select(TASK_SELECT).eq("user_id", req.user.id);
+    let query = inWorkspace(supabase.from("tasks").select(TASK_SELECT), req, await workspaceScope(req));
 
     if (text) {
       // quote the value so commas / brackets in the search don't break the filter
@@ -169,13 +248,14 @@ export const searchTasks = async (req, res) => {
 };
 
 // ── GET /tasks/streak ─────────────────────────────────────────────────────────
+// Always about you: your personal tasks + company tasks assigned to you.
 
 export const getStreak = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("tasks")
       .select("date_logged")
-      .eq("user_id", req.user.id)
+      .or(myWorkFilter(req.user.id))
       .order("date_logged", { ascending: false });
     if (error) throw error;
 
@@ -204,7 +284,7 @@ export const getStreak = async (req, res) => {
 };
 
 // ── GET /tasks/heatmap?days=365 ───────────────────────────────────────────────
-// Done tasks per day, for the GitHub-style activity grid
+// Your Done tasks per day, for the GitHub-style activity grid
 
 export const getHeatmap = async (req, res) => {
   const days = Math.min(Math.max(Number(req.query.days) || 365, 7), 730);
@@ -214,7 +294,7 @@ export const getHeatmap = async (req, res) => {
     const { data, error } = await supabase
       .from("tasks")
       .select("date_logged")
-      .eq("user_id", req.user.id)
+      .or(myWorkFilter(req.user.id))
       .eq("status", "Done")
       .gte("date_logged", start)
       .lte("date_logged", end);
@@ -229,12 +309,28 @@ export const getHeatmap = async (req, res) => {
 };
 
 // ── POST /tasks ───────────────────────────────────────────────────────────────
+// No workspace header = personal task. With a company: team/project/assignee.
 
 export const addTask = async (req, res) => {
   const { fields, error: invalid } = readTaskFields(req.body, { requireTitle: true });
   if (invalid) return res.status(400).json({ error: invalid });
-  if (fields.project_id && !(await canUseProject(req.user.id, fields.project_id)))
-    return res.status(400).json({ error: "You're not in that project's team" });
+
+  if (req.company) {
+    const member = req.company.member;
+    if (!can(member, "task.create")) return res.status(403).json({ error: "Viewers can't add tasks" });
+    if (fields.assignee_id && fields.assignee_id !== req.user.id && member.role === "guest")
+      return res.status(403).json({ error: "Guests can't assign tasks to others" });
+    const problem = await checkPlacement(fields, member);
+    if (problem) return res.status(400).json({ error: problem });
+    fields.company_id = req.company.id;
+    fields.assignee_id = fields.assignee_id || req.user.id;
+  } else {
+    if (fields.project_id || fields.team_id)
+      return res.status(400).json({ error: "Projects and teams belong to a company — switch to that company first" });
+    if (fields.assignee_id && fields.assignee_id !== req.user.id)
+      return res.status(400).json({ error: "Personal tasks can't be assigned to others" });
+    delete fields.assignee_id;
+  }
 
   try {
     const { data, error } = await supabase
@@ -258,7 +354,7 @@ export const addTask = async (req, res) => {
     }
 
     res.status(201).json(await loadTask(data.id));
-    announce(req.user.id, "created", data.id);
+    announce(data, "created");
     syncTaskToGoogle(req.user.id, data).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -270,20 +366,33 @@ export const addTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   const { fields, error: invalid } = readTaskFields(req.body);
   if (invalid) return res.status(400).json({ error: invalid });
-  if (fields.project_id && !(await canUseProject(req.user.id, fields.project_id)))
-    return res.status(400).json({ error: "You're not in that project's team" });
+
+  const { data: existing } = await supabase.from("tasks").select("*").eq("id", req.params.id).maybeSingle();
+  const access = await taskAccess(existing, req.user.id);
+  if (!access.canView) return res.status(404).json({ error: "Task not found" });
+  if (!access.canEdit) return res.status(403).json({ error: "You can't edit this task" });
+
+  if (existing.company_id) {
+    if (fields.assignee_id !== undefined && fields.assignee_id !== existing.assignee_id) {
+      if (!access.canAssign) return res.status(403).json({ error: "You can't reassign this task" });
+      if (!fields.assignee_id) return res.status(400).json({ error: "A company task needs an assignee" });
+    }
+    const problem = await checkPlacement(fields, access.member, existing);
+    if (problem) return res.status(400).json({ error: problem });
+  } else if (fields.project_id || fields.team_id || (fields.assignee_id && fields.assignee_id !== req.user.id)) {
+    return res.status(400).json({ error: "Personal tasks can't have a team, project or other assignee" });
+  }
 
   try {
     const { data, error } = await supabase
       .from("tasks")
       .update({ ...fields, updated_at: new Date().toISOString() })
       .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
       .select("*")
       .single();
     if (error) throw error;
 
-    // Replace tags if provided
+    // Replace tags if provided (tags are personal labels of whoever edits)
     if (Array.isArray(req.body.tags)) {
       await supabase.from("task_tags").delete().eq("task_id", data.id);
       const tagIds = await ownTagIds(req.user.id, req.body.tags);
@@ -295,33 +404,39 @@ export const updateTask = async (req, res) => {
     }
 
     res.json(await loadTask(data.id));
-    announce(req.user.id, "updated", data.id);
-    syncTaskToGoogle(req.user.id, data).catch(() => {});
+    announce(data, "updated");
+    syncTaskToGoogle(data.user_id, data).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
 // ── PUT /tasks/reorder ────────────────────────────────────────────────────────
-// Board drag & drop: { status, ids: [taskId, ...] } in their new order
+// Board drag & drop: { status, ids: [taskId, ...] } in their new order.
+// Tasks you can't edit are skipped.
 
 export const reorderTasks = async (req, res) => {
   const { status, ids } = req.body;
-  if (!STATUSES.includes(status) || !Array.isArray(ids))
+  if (!STATUSES.includes(status) || !Array.isArray(ids) || ids.length > 500)
     return res.status(400).json({ error: "status and ids are required" });
 
   try {
+    const { data: rows } = await supabase.from("tasks").select("*").in("id", ids);
+    const editable = new Set();
+    for (const row of rows || []) if ((await taskAccess(row, req.user.id)).canEdit) editable.add(row.id);
+
     await Promise.all(
       ids.map((id, index) =>
-        supabase
-          .from("tasks")
-          .update({ status, position: index, updated_at: new Date().toISOString() })
-          .eq("id", id)
-          .eq("user_id", req.user.id)
+        editable.has(Number(id))
+          ? supabase
+              .from("tasks")
+              .update({ status, position: index, updated_at: new Date().toISOString() })
+              .eq("id", id)
+          : null
       )
     );
-    res.json({ success: true });
-    announce(req.user.id, "updated", null);
+    res.json({ success: true, updated: editable.size });
+    (rows || []).filter((r) => editable.has(r.id)).slice(0, 1).forEach((r) => announce(r, "updated"));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -331,21 +446,16 @@ export const reorderTasks = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
-    const { data: task } = await supabase
-      .from("tasks")
-      .select("id, google_event_id")
-      .eq("id", req.params.id)
-      .eq("user_id", req.user.id)
-      .maybeSingle();
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", req.params.id)
-      .eq("user_id", req.user.id);
+    const { data: task } = await supabase.from("tasks").select("*").eq("id", req.params.id).maybeSingle();
+    const access = await taskAccess(task, req.user.id);
+    if (!access.canView) return res.status(404).json({ error: "Task not found" });
+    if (!access.canDelete) return res.status(403).json({ error: "Only its creator or a lead can delete this task" });
+
+    const { error } = await supabase.from("tasks").delete().eq("id", req.params.id);
     if (error) throw error;
     res.json({ success: true });
-    announce(req.user.id, "deleted", Number(req.params.id));
-    if (task?.google_event_id) syncTaskToGoogle(req.user.id, task, { deleted: true }).catch(() => {});
+    announce(task, "deleted");
+    if (task.google_event_id) syncTaskToGoogle(task.user_id, task, { deleted: true }).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -377,20 +487,24 @@ export const recursOn = (rule, startDate, today) => {
 export const runRecurringJob = async () => {
   const { data: originals, error } = await supabase
     .from("tasks")
-    .select("id, user_id, title, description, priority, recurrence, date_logged, task_tags(tag_id), users(timezone)")
+    .select("id, user_id, company_id, team_id, project_id, assignee_id, title, description, priority, recurrence, date_logged, task_tags(tag_id), creator:users!user_id(timezone)")
     .not("recurrence", "is", null)
     .is("recurrence_parent_id", null);
   if (error) return console.error("[Cron] recurring:", error.message);
 
   let created = 0;
   for (const t of originals) {
-    const today = todayIn(t.users?.timezone);
+    const today = todayIn(t.creator?.timezone);
     if (!recursOn(t.recurrence, t.date_logged, today)) continue;
 
     const { data: copy, error: insertError } = await supabase
       .from("tasks")
       .insert([{
         user_id: t.user_id,
+        company_id: t.company_id,
+        team_id: t.team_id,
+        project_id: t.project_id,
+        assignee_id: t.assignee_id,
         title: t.title,
         description: t.description,
         priority: t.priority,
@@ -406,7 +520,7 @@ export const runRecurringJob = async () => {
     const tagIds = (t.task_tags || []).map((tt) => tt.tag_id);
     if (tagIds.length)
       await supabase.from("task_tags").insert(tagIds.map((tag_id) => ({ task_id: copy.id, tag_id })));
-    announce(t.user_id, "created", copy.id);
+    announce(copy, "created");
     syncTaskToGoogle(t.user_id, copy).catch(() => {});
     created++;
   }

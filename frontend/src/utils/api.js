@@ -6,12 +6,14 @@ export const API_BASE = BASE_URL;
  * Small wrapper so pages can call apiRequest("/tasks", "POST", body).
  * The axios instance attaches the access token and refreshes it on 401.
  */
-export async function apiRequest(endpoint, method = "GET", body = null) {
+// options.personal = send the request as Personal (no company header)
+export async function apiRequest(endpoint, method = "GET", body = null, options = {}) {
   try {
     const res = await api.request({
       url: endpoint,
       method,
       data: body ?? undefined,
+      headers: options.personal ? { "X-Company-Id": "" } : undefined,
     });
     return res.data;
   } catch (err) {

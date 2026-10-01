@@ -33,52 +33,56 @@ import {
 import { getStandups, getStandupDraft, saveStandup } from "../controllers/standupController.js";
 import { setTeamSlack } from "../controllers/integrationController.js";
 import { authenticate } from "../middleware/auth.js";
+import { workspace } from "../middleware/workspace.js";
+
+// login check + the chosen workspace (X-Company-Id header)
+const auth = [authenticate, workspace];
 
 const router = express.Router();
 
-router.get("/", authenticate, getMyTeams);
-router.post("/", authenticate, createTeam);
-router.post("/join", authenticate, joinTeam);
+router.get("/", auth, getMyTeams);
+router.post("/", auth, createTeam);
+router.post("/join", auth, joinTeam);
 
 // Named routes first (before /:id)
-router.get("/projects/mine", authenticate, getMyProjects);
-router.get("/invites/lookup", authenticate, lookupInvite);
-router.post("/invites/accept", authenticate, acceptInvite);
+router.get("/projects/mine", auth, getMyProjects);
+router.get("/invites/lookup", auth, lookupInvite);
+router.post("/invites/accept", auth, acceptInvite);
 
-router.get("/:id", authenticate, getTeam);
-router.delete("/:id", authenticate, deleteTeam);
-router.post("/:id/leave", authenticate, leaveTeam);
-router.delete("/:id/members/:userId", authenticate, removeMember);
-router.put("/:id/members/:userId/role", authenticate, updateMemberRole);
-router.post("/:id/regenerate-invite", authenticate, regenerateInvite);
-router.get("/:id/feed", authenticate, getTeamFeed);
-router.get("/:id/stats", authenticate, getTeamStats);
+router.get("/:id", auth, getTeam);
+router.delete("/:id", auth, deleteTeam);
+router.post("/:id/leave", auth, leaveTeam);
+router.delete("/:id/members/:userId", auth, removeMember);
+router.put("/:id/members/:userId/role", auth, updateMemberRole);
+router.post("/:id/regenerate-invite", auth, regenerateInvite);
+router.get("/:id/feed", auth, getTeamFeed);
+router.get("/:id/stats", auth, getTeamStats);
 
 // Digest
-router.post("/:id/digest", authenticate, sendTeamDigest);
-router.put("/:id/digest-settings", authenticate, updateDigestSettings);
-router.put("/:id/slack", authenticate, setTeamSlack);
+router.post("/:id/digest", auth, sendTeamDigest);
+router.put("/:id/digest-settings", auth, updateDigestSettings);
+router.put("/:id/slack", auth, setTeamSlack);
 
 // Email invites
-router.get("/:id/invites", authenticate, getInvites);
-router.post("/:id/invites", authenticate, createInvite);
-router.delete("/:id/invites/:inviteId", authenticate, revokeInvite);
+router.get("/:id/invites", auth, getInvites);
+router.post("/:id/invites", auth, createInvite);
+router.delete("/:id/invites/:inviteId", auth, revokeInvite);
 
 // Projects
-router.get("/:id/projects", authenticate, getProjects);
-router.post("/:id/projects", authenticate, createProject);
-router.put("/:id/projects/:projectId", authenticate, updateProject);
-router.delete("/:id/projects/:projectId", authenticate, deleteProject);
-router.get("/:id/projects/:projectId/tasks", authenticate, getProjectTasks);
+router.get("/:id/projects", auth, getProjects);
+router.post("/:id/projects", auth, createProject);
+router.put("/:id/projects/:projectId", auth, updateProject);
+router.delete("/:id/projects/:projectId", auth, deleteProject);
+router.get("/:id/projects/:projectId/tasks", auth, getProjectTasks);
 
 // Team goals
-router.get("/:id/goals", authenticate, getTeamGoals);
-router.post("/:id/goals", authenticate, createTeamGoal);
-router.delete("/:id/goals/:goalId", authenticate, deleteTeamGoal);
+router.get("/:id/goals", auth, getTeamGoals);
+router.post("/:id/goals", auth, createTeamGoal);
+router.delete("/:id/goals/:goalId", auth, deleteTeamGoal);
 
 // Standups
-router.get("/:id/standups", authenticate, getStandups);
-router.get("/:id/standups/draft", authenticate, getStandupDraft);
-router.put("/:id/standups", authenticate, saveStandup);
+router.get("/:id/standups", auth, getStandups);
+router.get("/:id/standups/draft", auth, getStandupDraft);
+router.put("/:id/standups", auth, saveStandup);
 
 export default router;

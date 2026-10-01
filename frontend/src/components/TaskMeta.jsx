@@ -9,6 +9,13 @@ export default function TaskMeta({ task, showBlocker = true }) {
   const isRecurring = task.recurrence || task.recurrence_parent_id;
 
   const chips = [];
+  // company task done by someone other than whoever wrote it
+  if (task.company_id && task.assignee && task.assignee.id !== task.user_id)
+    chips.push(
+      <span key="as" className="text-[10px] text-gray-600" title="Assigned to">
+        → {task.assignee.name || task.assignee.email}
+      </span>
+    );
   if (task.project)
     chips.push(
       <span key="proj" className="flex items-center gap-1 text-[10px] text-gray-600" title="Team project">

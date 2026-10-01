@@ -24,6 +24,8 @@ const AUTH_ROUTES = [
   "/tasks/",
   "/join",
   "/integrations",
+  "/company",
+  "/companies",
 ];
 
 const Layout = ({ children }) => {

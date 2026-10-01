@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase.js";
 import { todayIn, monthRange, addDays, dayNumber } from "../utils/time.js";
+import { myWorkFilter } from "../utils/permissions.js";
 
 // Date range of the current week (Mon-Sun) or month, in the user's timezone
 export const periodRange = (period, tz) => {
@@ -11,15 +12,21 @@ export const periodRange = (period, tz) => {
 };
 
 // Adds { progress, start, end } to each goal: Done tasks in the period
-// (only tasks with the goal's tag, if it has one). userIds = whose tasks count.
-export const withProgress = async (goals, userIds, tz) => {
+// (only tasks with the goal's tag/project, if set).
+// scope = { userId } for a person's own work, or { teamId, companyId, memberIds } for a team.
+export const withProgress = async (goals, scope, tz) => {
   const out = [];
   for (const g of goals) {
     const range = periodRange(g.period, tz);
-    const { data: tasks } = await supabase
-      .from("tasks")
-      .select("id, project_id, task_tags(tag_id)")
-      .in("user_id", userIds)
+    let query = supabase.from("tasks").select("id, project_id, task_tags(tag_id)");
+    query = scope.userId
+      ? query.or(myWorkFilter(scope.userId))
+      : query.eq("company_id", scope.companyId).or(
+          scope.memberIds.length
+            ? `team_id.eq.${scope.teamId},and(team_id.is.null,assignee_id.in.(${scope.memberIds.join(",")}))`
+            : `team_id.eq.${scope.teamId}`
+        );
+    const { data: tasks } = await query
       .eq("status", "Done")
       .gte("date_logged", range.start)
       .lte("date_logged", range.end);
@@ -50,9 +57,10 @@ export const getGoals = async (req, res) => {
     .select("*, tags(id, name, color)")
     .eq("user_id", req.user.id)
     .is("team_id", null)
+    .is("company_id", null)
     .order("created_at");
   if (error) return res.status(500).json({ error: error.message });
-  res.json(await withProgress(data, [req.user.id], req.user.timezone));
+  res.json(await withProgress(data, { userId: req.user.id }, req.user.timezone));
 };
 
 // POST /goals
@@ -65,7 +73,7 @@ export const createGoal = async (req, res) => {
     .select("*, tags(id, name, color)")
     .single();
   if (error) return res.status(500).json({ error: error.message });
-  const [goal] = await withProgress([data], [req.user.id], req.user.timezone);
+  const [goal] = await withProgress([data], { userId: req.user.id }, req.user.timezone);
   res.status(201).json(goal);
 };
 
@@ -82,7 +90,7 @@ export const updateGoal = async (req, res) => {
     .select("*, tags(id, name, color)")
     .single();
   if (error) return res.status(404).json({ error: "Goal not found" });
-  const [goal] = await withProgress([data], [req.user.id], req.user.timezone);
+  const [goal] = await withProgress([data], { userId: req.user.id }, req.user.timezone);
   res.json(goal);
 };
 
