@@ -6,6 +6,8 @@ import { getWorkspace, getStoredUser, switchWorkspace } from "../api/api";
 import { ROLE_LABELS } from "../utils/workspace";
 import CompanyStructure from "../components/CompanyStructure";
 import OrgChart from "../components/OrgChart";
+import CompanyInvites from "../components/CompanyInvites";
+import OnboardingChecklists from "../components/OnboardingChecklists";
 
 const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
 const ROLES = ["admin", "manager", "member", "guest", "viewer"];
@@ -267,6 +269,14 @@ const ACTION_LABELS = {
   "department.updated": "changed a department",
   "department.deleted": "deleted a department",
   "team.moved": "moved a team",
+  "invite.sent": "sent an invite",
+  "invite.revoked": "cancelled an invite",
+  "join_request.denied": "declined a join request",
+  "onboarding.created": "created an onboarding checklist",
+  "onboarding.updated": "changed an onboarding checklist",
+  "onboarding.assigned": "gave someone an onboarding checklist",
+  "project.member_added": "added someone to a project",
+  "project.member_removed": "removed someone from a project",
 };
 
 function Audit({ company }) {
@@ -397,6 +407,7 @@ export default function CompanyPage() {
   const tabs = [
     ["members", "People"],
     ...(company.my_role !== "guest" ? [["structure", "Structure"], ["org", "Org chart"]] : []),
+    ...(isAdmin || company.my_role === "manager" ? [["invites", "Invites"], ["onboarding", "Onboarding"]] : []),
     ["general", "Settings"],
     ...(isAdmin ? [["audit", "Audit log"]] : []),
     ["danger", company.my_role === "owner" ? "Ownership" : "Leave"],
@@ -426,6 +437,8 @@ export default function CompanyPage() {
         : <Members company={company} />)}
       {tab === "structure" && <CompanyStructure company={company} />}
       {tab === "org" && <OrgChart company={company} />}
+      {tab === "invites" && <CompanyInvites company={company} />}
+      {tab === "onboarding" && <OnboardingChecklists company={company} />}
       {tab === "general" && <General company={company} types={types} onSaved={(c) => setCompany({ ...company, ...c })} />}
       {tab === "audit" && <Audit company={company} />}
       {tab === "danger" && <Danger company={company} />}

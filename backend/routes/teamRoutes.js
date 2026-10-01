@@ -26,6 +26,9 @@ import {
   updateProject,
   deleteProject,
   getProjectTasks,
+  getProjectMembers,
+  addProjectMember,
+  removeProjectMember,
   getTeamGoals,
   createTeamGoal,
   deleteTeamGoal,
@@ -74,6 +77,9 @@ router.post("/:id/projects", auth, createProject);
 router.put("/:id/projects/:projectId", auth, updateProject);
 router.delete("/:id/projects/:projectId", auth, deleteProject);
 router.get("/:id/projects/:projectId/tasks", auth, getProjectTasks);
+router.get("/:id/projects/:projectId/members", auth, getProjectMembers);
+router.post("/:id/projects/:projectId/members", auth, addProjectMember);
+router.delete("/:id/projects/:projectId/members/:userId", auth, removeProjectMember);
 
 // Team goals
 router.get("/:id/goals", auth, getTeamGoals);

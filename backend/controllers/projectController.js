@@ -165,6 +165,54 @@ export const getProjectTasks = async (req, res) => {
   res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.assignee || t.creator })));
 };
 
+// ── People on a project (guests, and people from outside the team) ─────────
+
+// GET /teams/:id/projects/:projectId/members
+export const getProjectMembers = async (req, res) => {
+  const { id, projectId } = req.params;
+  if (!(await getMembership(id, req.user.id))) return res.status(403).json({ error: "Not a team member" });
+  const { data: project } = await supabase.from("projects").select("id").eq("id", projectId).eq("team_id", id).maybeSingle();
+  if (!project) return res.status(404).json({ error: "Project not found" });
+  const { data, error } = await supabase
+    .from("project_members").select("user_id, access, created_at, users!user_id(name, email)")
+    .eq("project_id", projectId).order("created_at");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data.map(({ users, user_id, ...m }) => ({ ...m, id: user_id, name: users?.name, email: users?.email })));
+};
+
+// POST /teams/:id/projects/:projectId/members { user_id, access? } — team lead / admin
+export const addProjectMember = async (req, res) => {
+  const { id, projectId } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Only the team lead or an admin adds people" });
+  const { data: project } = await supabase
+    .from("projects").select("id, name, company_id").eq("id", projectId).eq("team_id", id).maybeSingle();
+  if (!project) return res.status(404).json({ error: "Project not found" });
+  const target = await getCompanyMember(project.company_id, req.body.user_id);
+  if (!target) return res.status(400).json({ error: "Pick someone in this company (invite guests from Company → Invites)" });
+  const access = req.body.access === "view" ? "view" : "edit";
+  const { error } = await supabase.from("project_members")
+    .upsert([{ project_id: projectId, user_id: target.user_id, access, added_by: req.user.id }], { onConflict: "project_id,user_id" });
+  if (error) return res.status(500).json({ error: error.message });
+  await audit(req, project.company_id, "project.member_added", "project", projectId, { user_id: target.user_id, name: project.name });
+  res.status(201).json({ success: true });
+  publishToTeam(id, "project", {});
+};
+
+// DELETE /teams/:id/projects/:projectId/members/:userId
+export const removeProjectMember = async (req, res) => {
+  const { id, projectId, userId } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Only the team lead or an admin removes people" });
+  const { data: project } = await supabase
+    .from("projects").select("id, company_id").eq("id", projectId).eq("team_id", id).maybeSingle();
+  if (!project) return res.status(404).json({ error: "Project not found" });
+  await supabase.from("project_members").delete().eq("project_id", projectId).eq("user_id", userId);
+  await audit(req, project.company_id, "project.member_removed", "project", projectId, { user_id: userId });
+  res.json({ success: true });
+  publishToTeam(id, "project", {});
+};
+
 // ── Team goals ───────────────────────────────────────────────────────────────
 // Count Done tasks from every member (optionally only one project's).
 

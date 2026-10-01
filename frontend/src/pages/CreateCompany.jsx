@@ -3,6 +3,53 @@ import { Building2 } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { switchWorkspace } from "../api/api";
 
+// Companies that let people with my (verified) work email in
+function JoinableCompanies() {
+  const [list, setList] = useState([]);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    apiRequest("/companies/discover", "GET", null, { personal: true }).then(setList).catch(() => {});
+  }, []);
+
+  const join = async (c) => {
+    setMsg("");
+    try {
+      const out = await apiRequest(`/companies/${c.id}/join`, "POST", {}, { personal: true });
+      if (out.joined) return switchWorkspace(c.id);
+      setList(list.map((x) => (x.id === c.id ? { ...x, requested: true } : x)));
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+
+  if (!list.length) return null;
+  return (
+    <div className="mb-6">
+      <h2 className="text-sm font-semibold text-gray-900 mb-2">Join your team</h2>
+      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        {list.map((c) => (
+          <div key={c.id} className="px-4 py-3 flex items-center gap-3">
+            <span className="w-8 h-8 rounded bg-gray-900 text-white flex items-center justify-center text-xs font-semibold">{c.name[0].toUpperCase()}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
+              <p className="text-xs text-gray-500">{c.domain_join === "auto" ? "Anyone with your email domain can join" : "An admin approves new people"}</p>
+            </div>
+            {c.requested ? (
+              <span className="text-xs text-gray-400">Request sent</span>
+            ) : (
+              <button onClick={() => join(c)} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+                {c.domain_join === "auto" ? "Join" : "Ask to join"}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {msg && <p className="text-sm text-red-600 mt-2">{msg}</p>}
+    </div>
+  );
+}
+
 // New company workspace: a name and the kind of work (sets project columns)
 export default function CreateCompany() {
   const [name, setName] = useState("");
@@ -32,6 +79,7 @@ export default function CreateCompany() {
 
   return (
     <div className="p-6 lg:p-8 max-w-xl">
+      <JoinableCompanies />
       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
         <Building2 size={18} className="text-gray-600" />
       </div>

@@ -6,8 +6,69 @@ import { useLiveEvent } from "../../utils/live";
 import { refreshMyProjects } from "../../utils/projects";
 import { STATUS_BADGE } from "../../utils/taskMeta";
 import TaskMeta from "../TaskMeta";
+import { useCompanyPeople } from "../../utils/companyPeople";
+import { ROLE_LABELS } from "../../utils/workspace";
 
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#ec4899", "#6b7280"];
+
+// People added to one project on top of its team (guests, people from other teams)
+function ProjectPeople({ team, project }) {
+  const isAdmin = team.role === "admin";
+  const { members } = useCompanyPeople();
+  const [people, setPeople] = useState([]);
+  const [pick, setPick] = useState("");
+  const [error, setError] = useState("");
+  const base = `/teams/${team.id}/projects/${project.id}/members`;
+
+  const load = useCallback(() => apiRequest(base).then(setPeople).catch(() => {}), [base]);
+  useEffect(() => { load(); }, [load]);
+
+  const run = async (fn) => {
+    setError("");
+    try {
+      await fn();
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (!isAdmin && people.length === 0) return null;
+  const roleOf = (id) => members.find((m) => m.id === id)?.role;
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+      <p className="text-xs font-medium text-gray-500 mb-2">Also on this project <span className="text-gray-400 font-normal">(besides the {team.name} team)</span></p>
+      {people.length === 0 && <p className="text-xs text-gray-400 mb-2">Nobody extra yet. Add someone from another team, or invite a guest from Company → Invites.</p>}
+      <div className="flex flex-wrap gap-2 mb-2">
+        {people.map((p) => (
+          <span key={p.id} className="flex items-center gap-1.5 text-xs pl-2.5 pr-1.5 py-1 rounded-full bg-gray-100 text-gray-700">
+            {p.name || p.email}
+            {roleOf(p.id) === "guest" && <span className="text-[10px] text-amber-700">{ROLE_LABELS.guest}</span>}
+            {isAdmin && (
+              <button className="text-gray-400 hover:text-rose-500" aria-label={`Remove ${p.name || p.email}`}
+                onClick={() => run(() => apiRequest(`${base}/${p.id}`, "DELETE"))}>×</button>
+            )}
+          </span>
+        ))}
+      </div>
+      {isAdmin && (
+        <div className="flex gap-2">
+          <select className="text-xs px-2 py-1.5 border border-gray-200 rounded-md bg-white flex-1 max-w-xs" value={pick} onChange={(e) => setPick(e.target.value)}>
+            <option value="">Add someone from the company…</option>
+            {members.filter((m) => !people.some((p) => p.id === m.id)).map((m) => (
+              <option key={m.id} value={m.id}>{m.name || m.email} ({ROLE_LABELS[m.role]})</option>
+            ))}
+          </select>
+          <button disabled={!pick} className="px-2.5 py-1.5 border border-gray-200 text-xs rounded-md hover:bg-gray-50 disabled:opacity-40"
+            onClick={() => run(async () => { await apiRequest(base, "POST", { user_id: pick }); setPick(""); })}>
+            Add
+          </button>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
+}
 
 function ProjectTasks({ team, project, onBack }) {
   const [tasks, setTasks] = useState(null);
@@ -28,6 +89,7 @@ function ProjectTasks({ team, project, onBack }) {
         <h2 className="text-base font-semibold text-gray-900">{project.name}</h2>
       </div>
       {project.description && <p className="text-sm text-gray-500 mb-4">{project.description}</p>}
+      <ProjectPeople team={team} project={project} />
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
         {tasks === null && <p className="p-4 text-sm text-gray-400">Loading…</p>}
         {tasks?.length === 0 && <p className="p-8 text-center text-sm text-gray-400">No tasks yet. Pick this project when adding or editing a task.</p>}

@@ -64,7 +64,7 @@ export default function WorkspaceSwitcher({ onNavigate }) {
           ))}
           <div className="border-t border-gray-100 my-1" />
           {current && <Item icon={Settings} title="Company settings" onClick={() => go("/company")} />}
-          <Item icon={Plus} title="Create a company" onClick={() => go("/companies/new")} />
+          <Item icon={Plus} title="Create or join a company" onClick={() => go("/companies/new")} />
         </div>
       )}
     </div>

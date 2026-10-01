@@ -21,6 +21,22 @@ import {
   placeTeam,
   getOrgChart,
 } from "../controllers/structureController.js";
+import {
+  createCompanyInvite,
+  getCompanyInvites,
+  revokeCompanyInvite,
+  lookupCompanyInvite,
+  acceptCompanyInvite,
+  discoverCompanies,
+  joinByDomain,
+  getJoinRequests,
+  decideJoinRequest,
+  getTemplates,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+  assignTemplate,
+} from "../controllers/joinController.js";
 import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -28,6 +44,9 @@ const router = express.Router();
 router.get("/", authenticate, getMyCompanies);
 router.post("/", authenticate, createCompany);
 router.get("/work-types", authenticate, getWorkTypes);
+router.get("/discover", authenticate, discoverCompanies);
+router.get("/invites/lookup", authenticate, lookupCompanyInvite);
+router.post("/invites/accept", authenticate, acceptCompanyInvite);
 
 router.get("/:id", authenticate, getCompany);
 router.put("/:id", authenticate, updateCompany);
@@ -47,5 +66,18 @@ router.put("/:id/departments/:deptId", authenticate, updateDepartment);
 router.delete("/:id/departments/:deptId", authenticate, deleteDepartment);
 router.put("/:id/teams/:teamId/placement", authenticate, placeTeam);
 router.get("/:id/org", authenticate, getOrgChart);
+
+// joining: invites, email-domain join, join requests, onboarding checklists
+router.get("/:id/invites", authenticate, getCompanyInvites);
+router.post("/:id/invites", authenticate, createCompanyInvite);
+router.delete("/:id/invites/:inviteId", authenticate, revokeCompanyInvite);
+router.post("/:id/join", authenticate, joinByDomain);
+router.get("/:id/join-requests", authenticate, getJoinRequests);
+router.post("/:id/join-requests/:requestId", authenticate, decideJoinRequest);
+router.get("/:id/onboarding", authenticate, getTemplates);
+router.post("/:id/onboarding", authenticate, createTemplate);
+router.put("/:id/onboarding/:templateId", authenticate, updateTemplate);
+router.delete("/:id/onboarding/:templateId", authenticate, deleteTemplate);
+router.post("/:id/onboarding/:templateId/assign", authenticate, assignTemplate);
 
 export default router;
