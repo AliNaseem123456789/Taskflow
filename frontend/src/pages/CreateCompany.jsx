@@ -26,11 +26,11 @@ function JoinableCompanies() {
   if (!list.length) return null;
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-semibold text-gray-900 mb-2">Join your team</h2>
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+      <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Join your team</h2>
+      <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
         {list.map((c) => (
           <div key={c.id} className="px-4 py-3 flex items-center gap-3">
-            <span className="w-8 h-8 rounded bg-gray-900 text-white flex items-center justify-center text-xs font-semibold">{c.name[0].toUpperCase()}</span>
+            <span className="w-8 h-8 rounded btn-accent flex items-center justify-center text-xs font-semibold">{c.name[0].toUpperCase()}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
               <p className="text-xs text-gray-500">{c.domain_join === "auto" ? "Anyone with your email domain can join" : "An admin approves new people"}</p>
@@ -38,7 +38,7 @@ function JoinableCompanies() {
             {c.requested ? (
               <span className="text-xs text-gray-400">Request sent</span>
             ) : (
-              <button onClick={() => join(c)} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+              <button onClick={() => join(c)} className="px-3 py-1.5 btn-accent text-sm rounded-md">
                 {c.domain_join === "auto" ? "Join" : "Ask to join"}
               </button>
             )}
@@ -88,7 +88,7 @@ export default function CreateCompany() {
         A shared workspace for teams, projects and assigned work. Your personal dones stay private.
       </p>
 
-      <form onSubmit={create} className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+      <form onSubmit={create} className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Company or group name</label>
           <input
@@ -98,7 +98,7 @@ export default function CreateCompany() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Acme Inc, or 'Design freelancers'"
-            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white"
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white"
           />
         </div>
         <div>
@@ -110,7 +110,7 @@ export default function CreateCompany() {
                 type="button"
                 onClick={() => setWorkType(t.key)}
                 className={`text-left text-sm px-3 py-2 rounded-md border ${
-                  workType === t.key ? "border-gray-900 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  workType === t.key ? "border-indigo-600 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 {t.label}
@@ -122,7 +122,7 @@ export default function CreateCompany() {
           )}
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button disabled={saving} className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50">
+        <button disabled={saving} className="px-4 py-2 btn-accent text-sm font-medium rounded-md disabled:opacity-50">
           {saving ? "Creating…" : "Create company"}
         </button>
       </form>

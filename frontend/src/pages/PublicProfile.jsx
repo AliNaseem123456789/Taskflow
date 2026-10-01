@@ -28,7 +28,7 @@ function InviteBox({ actions }) {
       <select className="text-sm px-2.5 py-1.5 border border-gray-200 rounded-md bg-white text-gray-900" value={companyId} onChange={(e) => setCompanyId(e.target.value)} aria-label="Company to invite to">
         {actions.invite_to.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
-      <button onClick={send} disabled={!!msg} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md disabled:opacity-50">Send invite</button>
+      <button onClick={send} disabled={!!msg} className="px-3 py-1.5 btn-accent text-sm rounded-md disabled:opacity-50">Send invite</button>
       {msg && <span className="text-sm text-emerald-700">{msg}</span>}
       {error && <span className="text-sm text-red-600">{error}</span>}
     </div>
@@ -55,10 +55,10 @@ export default function PublicProfile() {
       <div className="space-y-5">
         <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-3xl font-semibold shrink-0">{p.name[0].toUpperCase()}</div>
+            <div className="w-20 h-20 rounded-2xl btn-accent flex items-center justify-center text-3xl font-semibold shrink-0">{p.name[0].toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold text-gray-900">{p.name}</h1>
+                <h1 className="font-display text-[28px] leading-none font-bold text-gray-900">{p.name}</h1>
                 {p.open_to_work && <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700"><Sparkles size={12} /> Open to work</span>}
               </div>
               {p.headline && <p className="text-base text-gray-700 mt-1">{p.headline}</p>}
@@ -73,7 +73,7 @@ export default function PublicProfile() {
           </div>
           {p.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-5">
-              {p.genres.map((g) => <span key={g} className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-900 text-white">{GENRE_LABELS[g] || g}</span>)}
+              {p.genres.map((g) => <span key={g} className="text-xs font-medium px-2.5 py-1 rounded-full btn-accent ">{GENRE_LABELS[g] || g}</span>)}
             </div>
           )}
           {p.bio && <p className="text-sm text-gray-700 leading-relaxed mt-5 whitespace-pre-wrap">{p.bio}</p>}
@@ -85,7 +85,7 @@ export default function PublicProfile() {
           <div className="sm:col-span-2 space-y-5">
             {p.showcase.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-gray-900 mb-2">Showcase</h2>
+                <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Showcase</h2>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {p.showcase.map((s, i) => (
                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
@@ -99,7 +99,7 @@ export default function PublicProfile() {
             )}
             {p.skills.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-gray-900 mb-2">Skills</h2>
+                <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Skills</h2>
                 <div className="flex flex-wrap gap-1.5">{p.skills.map((s) => <span key={s} className="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-700">{s}</span>)}</div>
               </div>
             )}
@@ -107,7 +107,7 @@ export default function PublicProfile() {
           <div className="space-y-5">
             {p.links.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                <h2 className="text-sm font-semibold text-gray-900">Links</h2>
+                <h2 className="font-display text-[17px] font-bold text-gray-900">Links</h2>
                 {p.links.map((l, i) => (
                   <a key={i} href={l.url} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 truncate"><Link2 size={13} className="shrink-0 text-gray-400" /> {l.label}</a>
                 ))}
@@ -115,7 +115,7 @@ export default function PublicProfile() {
             )}
             {p.companies.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                <h2 className="text-sm font-semibold text-gray-900">Works at</h2>
+                <h2 className="font-display text-[17px] font-bold text-gray-900">Works at</h2>
                 {p.companies.map((c) => (
                   <Link key={c.slug} to={`/c/${c.slug}`} className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"><Building2 size={13} className="text-gray-400" /> {c.name}{c.job_title && <span className="text-gray-400">· {c.job_title}</span>}</Link>
                 ))}

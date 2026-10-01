@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, Globe, Lock, Plus, Trash2, UserCircle } from "lucide-react";
+import { ExternalLink, Globe, Lock, Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { GENRE_LABELS, KIND_LABELS } from "../utils/publicApi";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const opts = { personal: true }; // a profile belongs to the person, not a workspace
 
 // Edit your public profile (opt-in). Personal tasks never appear on it.
@@ -55,7 +56,7 @@ export default function PublicProfileEdit() {
     <form onSubmit={save} className="p-6 lg:p-8 max-w-3xl space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><UserCircle size={20} /> Public profile</h1>
+          <h1 className="page-title"><AreaTile /> Public profile</h1>
           <p className="text-sm text-gray-500 mt-1">A page about your work that people can find in Discover. Your personal tasks and email never appear on it.</p>
         </div>
         {saved?.is_public && <Link to={`/u/${saved.handle}`} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-sm rounded-md hover:bg-gray-50 shrink-0"><ExternalLink size={13} /> View</Link>}
@@ -93,7 +94,7 @@ export default function PublicProfileEdit() {
           <div className="flex flex-wrap gap-1.5">
             {data.genres.map((g) => (
               <button type="button" key={g} onClick={() => toggleIn("genres", g, 5)}
-                className={`text-xs px-2.5 py-1 rounded-full border ${f.genres.includes(g) ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>{GENRE_LABELS[g] || g}</button>
+                className={`text-xs px-2.5 py-1 rounded-full border ${f.genres.includes(g) ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>{GENRE_LABELS[g] || g}</button>
             ))}
           </div>
         </div>
@@ -151,7 +152,7 @@ export default function PublicProfileEdit() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {msg && <p className="text-sm text-emerald-700">{msg}</p>}
-      <button disabled={busy} className="px-5 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">{busy ? "Saving…" : "Save profile"}</button>
+      <button disabled={busy} className="px-5 py-2 btn-accent text-sm rounded-md disabled:opacity-50">{busy ? "Saving…" : "Save profile"}</button>
     </form>
   );
 }

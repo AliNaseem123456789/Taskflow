@@ -5,6 +5,7 @@ import { exportJSON, exportCSV, exportPDF } from "../utils/export";
 import { apiRequest } from "../utils/api";
 import { localDate } from "../utils/date";
 import { aiRequest, useAI } from "../utils/ai";
+import AreaTile from "../components/AreaTile";
 
 // "Write my weekly report" — a first-person draft from your own work, to copy into an email or chat
 function WeeklyReport() {
@@ -23,10 +24,10 @@ function WeeklyReport() {
   const text = report && [report.highlight, report.done && `Done:\n${report.done}`, report.in_progress && `In progress:\n${report.in_progress}`,
     report.next && `Next:\n${report.next}`, report.blockers && `Blockers:\n${report.blockers}`].filter(Boolean).join("\n\n");
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
       <div className="flex items-center gap-2">
         <Sparkles size={16} className="text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-900 flex-1">Weekly report</h2>
+        <h2 className="font-display text-[17px] font-bold text-gray-900 flex-1">Weekly report</h2>
         <button onClick={write} className="text-xs px-3 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50">{report ? "Write again" : "Write my weekly report"}</button>
       </div>
       {state && <p className="text-xs text-gray-500 mt-2">{state}</p>}
@@ -57,7 +58,9 @@ export default function ReportsPage({ userId }) {
         const d = JSON.parse(user);
         return d.id || d.user_id;
       }
-    } catch {}
+    } catch {
+      // no stored user: fall through
+    }
     return null;
   }, [userId]);
 
@@ -137,12 +140,6 @@ export default function ReportsPage({ userId }) {
     else exportJSON({ tasks, ai_summary: aiSummary, generated: new Date().toISOString() }, name);
   };
 
-  const statusBadge = {
-    Done: "bg-emerald-50 text-emerald-700",
-    Doing: "bg-amber-50 text-amber-700",
-    Delayed: "bg-rose-50 text-rose-700",
-  };
-
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
@@ -156,7 +153,7 @@ export default function ReportsPage({ userId }) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Reports</h1>
+          <h1 className="page-title"><AreaTile />Reports</h1>
           <p className="text-sm text-gray-500 mt-1">AI-powered productivity insights</p>
         </div>
         <div className="flex gap-2">
@@ -169,7 +166,7 @@ export default function ReportsPage({ userId }) {
           </button>
           <ExportMenu
             onExport={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium btn-accent rounded-md transition-colors"
           />
         </div>
       </div>
@@ -183,10 +180,10 @@ export default function ReportsPage({ userId }) {
       {ai.on && <WeeklyReport />}
 
       {/* AI Summary */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles size={16} className="text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">AI Summary</h2>
+          <h2 className="font-display text-[17px] font-bold text-gray-900">AI Summary</h2>
           {summaryLoading && (
             <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
           )}
@@ -249,7 +246,7 @@ export default function ReportsPage({ userId }) {
         </div>
 
         {/* Recommendations */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 h-fit">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 h-fit">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Recommendations</h3>
           <div className="space-y-3">
             {(aiSummary?.recommendations || []).map((rec, i) => (

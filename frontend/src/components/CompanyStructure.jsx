@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, Building2, Users } from "lucide-react";
 import { apiRequest } from "../utils/api";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // Departments and where each team sits. Admins edit; everyone else reads.
 export default function CompanyStructure({ company }) {
@@ -91,14 +91,14 @@ export default function CompanyStructure({ company }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {canEdit && (
-        <form onSubmit={addDept} className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap gap-2 items-center">
+        <form onSubmit={addDept} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-2 items-center">
           <input className={`${inputCls} flex-1 min-w-[180px]`} placeholder="New department, e.g. Engineering" value={name}
             onChange={(e) => setName(e.target.value)} />
           <select className={inputCls} value={parent} onChange={(e) => setParent(e.target.value)}>
             <option value="">Top level</option>
             {ordered.map((d) => <option key={d.id} value={d.id}>inside {d.name}</option>)}
           </select>
-          <button className="flex items-center gap-1 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button className="flex items-center gap-1 px-3 py-2 btn-accent text-sm rounded-md">
             <Plus size={14} /> Add department
           </button>
         </form>
@@ -113,11 +113,11 @@ export default function CompanyStructure({ company }) {
       {ordered.map((d) => {
         const dTeams = teams.filter((t) => t.department_id === d.id);
         return (
-          <div key={d.id} className="bg-white border border-gray-200 rounded-lg p-4" style={{ marginLeft: d.depth * 24 }}>
+          <div key={d.id} className="bg-white border border-gray-200 rounded-xl p-4" style={{ marginLeft: d.depth * 24 }}>
             <div className="flex flex-wrap items-center gap-2">
               <Building2 size={15} className="text-gray-500" />
               {canEdit ? (
-                <input className="text-sm font-semibold text-gray-900 bg-transparent outline-none border-b border-transparent focus:border-gray-300 flex-1 min-w-[120px]"
+                <input className="text-sm font-semibold text-gray-900 bg-transparent outline-none border-b border-transparent focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 flex-1 min-w-[120px]"
                   defaultValue={d.name} onBlur={(e) => e.target.value.trim() && e.target.value !== d.name && updateDept(d, { name: e.target.value })} />
               ) : (
                 <span className="text-sm font-semibold text-gray-900 flex-1">{d.name}</span>

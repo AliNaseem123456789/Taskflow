@@ -21,7 +21,7 @@ export default function UnreadAnnouncements() {
     apiRequest(`/companies/${companyId}/announcements/${id}/read`, "POST").then(load).catch(() => {});
 
   return (
-    <div className="bg-white border border-gray-900 rounded-lg p-4 mb-6">
+    <div className="bg-white border border-indigo-600 rounded-lg p-4 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <Megaphone size={14} className="text-gray-700" />
         <p className="text-sm font-semibold text-gray-900 flex-1">{items.length === 1 ? "New announcement" : `${items.length} new announcements`}</p>

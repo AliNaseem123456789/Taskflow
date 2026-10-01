@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, Clock, EyeOff, MapPin, Pencil, Plus, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, Clock, EyeOff, MapPin, Pencil, Plus, Sparkles, Users } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { getStoredUser, getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
 import Markdown from "../components/Markdown";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const KIND = { full_time: "Full-time", part_time: "Part-time", project: "Project", gig: "Short gig" };
 const STAGES = [
   ["applied", "Applied", "bg-gray-100 text-gray-700"],
@@ -38,7 +39,7 @@ function Skills({ skills, mine = [] }) {
 
 function JobCard({ j, mine }) {
   return (
-    <Link to={`/jobs/${j.id}`} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-400 flex flex-col gap-2.5">
+    <Link to={`/jobs/${j.id}`} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-400 flex flex-col gap-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900">{j.title}</p>
@@ -75,7 +76,7 @@ function MySkills({ companyId, skills, onSaved }) {
       {editing ? (
         <>
           <input className={`${inputCls} py-1 text-xs w-72`} value={text} onChange={(e) => setText(e.target.value)} placeholder="react, sql, design…" aria-label="Your skills" />
-          <button onClick={save} className="px-2.5 py-1 bg-gray-900 text-white rounded-md">Save</button>
+          <button onClick={save} className="px-2.5 py-1 btn-accent rounded-md">Save</button>
           <button onClick={() => setEditing(false)}>Cancel</button>
         </>
       ) : (
@@ -113,15 +114,15 @@ function Board({ companyId }) {
     <div className="p-6 lg:p-8 max-w-5xl space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><BriefcaseBusiness size={20} /> Job board</h1>
+          <h1 className="page-title"><AreaTile /> Job board</h1>
           <p className="text-sm text-gray-500 mt-1">Open roles inside the company. Applying is confidential — only the hiring side sees it.</p>
         </div>
-        {data.can_post && <Link to="/jobs/new" className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 shrink-0"><Plus size={14} /> Post a role</Link>}
+        {data.can_post && <Link to="/jobs/new" className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md shrink-0"><Plus size={14} /> Post a role</Link>}
       </div>
       <MySkills companyId={companyId} skills={data.my_skills} onSaved={load} />
       <div className="flex gap-6 border-b border-gray-200">
         {tabs.map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-900"}`}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} className={`pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-indigo-600 text-indigo-700 font-semibold" : "border-transparent text-gray-500 hover:text-gray-900"}`}>{l}</button>
         ))}
       </div>
 
@@ -134,14 +135,14 @@ function Board({ companyId }) {
               <div className="grid sm:grid-cols-3 gap-3">{suggested.map((j) => <JobCard key={j.id} j={j} mine={data.my_skills} />)}</div>
             </div>
           )}
-          {open.length === 0 && <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-400">No open roles right now.</div>}
+          {open.length === 0 && <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">No open roles right now.</div>}
           {suggested.length > 0 && rest.length > 0 && !q && <p className="text-sm font-semibold text-gray-900">More roles</p>}
           <div className="grid sm:grid-cols-2 gap-3">{rest.map((j) => <JobCard key={j.id} j={j} mine={data.my_skills} />)}</div>
         </>
       )}
 
       {tab === "mine" && (
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
           {apps.length === 0 && <p className="p-8 text-center text-sm text-gray-400">You haven't applied to anything.</p>}
           {apps.map((a) => (
             <Link key={a.id} to={`/jobs/${a.posting.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
@@ -198,8 +199,8 @@ function JobForm({ companyId, id }) {
   return (
     <form onSubmit={save} className="p-6 lg:p-8 max-w-3xl space-y-5">
       <Link to={id ? `/jobs/${id}` : "/jobs"} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> Back</Link>
-      <h1 className="text-xl font-semibold text-gray-900">{id ? "Edit role" : "Post a role"}</h1>
-      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+      <h1 className="page-title"><AreaTile />{id ? "Edit role" : "Post a role"}</h1>
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         <input required className={`${inputCls} w-full text-base`} placeholder="Role title, e.g. Data engineer" value={form.title} onChange={set("title")} aria-label="Role title" />
         <div className="grid sm:grid-cols-3 gap-3">
           <label className={label}>Team
@@ -241,7 +242,7 @@ function JobForm({ companyId, id }) {
         </label>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">{id ? "Save" : "Post role"}</button>
+      <button className="px-4 py-2 btn-accent text-sm rounded-md">{id ? "Save" : "Post role"}</button>
     </form>
   );
 }
@@ -264,9 +265,9 @@ function Applicant({ a, companyId, onChange }) {
   };
   const final = ["hired", "withdrawn"].includes(a.status);
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold shrink-0">{(a.user.name || a.user.email || "?")[0].toUpperCase()}</div>
+        <div className="w-9 h-9 rounded-full btn-accent flex items-center justify-center text-sm font-semibold shrink-0">{(a.user.name || a.user.email || "?")[0].toUpperCase()}</div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900">{a.user.name || a.user.email || a.profile?.handle}</p>
           <p className="text-xs text-gray-500">
@@ -291,7 +292,7 @@ function Applicant({ a, companyId, onChange }) {
       )}
       <div className="flex items-center gap-2">
         <EyeOff size={12} className="text-gray-300 shrink-0" />
-        <input className="flex-1 text-xs px-2 py-1 border border-transparent hover:border-gray-200 focus:border-gray-300 rounded outline-none bg-transparent text-gray-700" placeholder="Private note for the hiring side" value={note}
+        <input className="flex-1 text-xs px-2 py-1 border border-transparent hover:border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 rounded outline-none bg-transparent text-gray-700" placeholder="Private note for the hiring side" value={note}
           onChange={(e) => setNote(e.target.value)} onBlur={() => note !== (a.hiring_note || "") && apiRequest(`/companies/${companyId}/applications/${a.id}`, "PUT", { hiring_note: note }).catch(() => {})} aria-label="Hiring note" />
       </div>
       {a.transfer_id && <p className="text-[11px] text-emerald-700">Team move created — see Company → Moves.</p>}
@@ -320,10 +321,10 @@ function JobPage({ companyId, id }) {
   return (
     <div className="p-6 lg:p-8 max-w-5xl space-y-5">
       <Link to="/jobs" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> Job board</Link>
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">{j.title}</h1>
+            <h1 className="page-title"><AreaTile />{j.title}</h1>
             <p className="text-sm text-gray-500 mt-1">{[j.team?.name || "Company-wide", KIND[j.kind], j.level, j.location].filter(Boolean).join(" · ")}</p>
             <p className="text-xs text-gray-400 mt-1">
               Hiring manager {j.hiring_manager?.name || j.hiring_manager?.email || "—"} · {j.openings} opening{j.openings === 1 ? "" : "s"}{j.closes_on ? ` · closes ${fmt(j.closes_on)}` : ""}
@@ -350,7 +351,7 @@ function JobPage({ companyId, id }) {
       </div>
 
       {!j.can_manage && (
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           {mine && mine.status !== "withdrawn" ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2"><p className="text-sm font-semibold text-gray-900 flex-1">Your application</p><StageChip status={mine.status} /></div>
@@ -373,7 +374,7 @@ function JobPage({ companyId, id }) {
               <textarea rows={4} className={`${inputCls} w-full`} placeholder="Why you'd be good at this, what you've worked on (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Application note" />
               <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={tell} onChange={(e) => setTell(e.target.checked)} /> Let my manager know I applied</label>
               <p className="text-xs text-gray-400">Your application is confidential: only the hiring manager, whoever posted the role and company admins see it.</p>
-              <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">{mine ? "Apply again" : "Apply"}</button>
+              <button className="px-4 py-2 btn-accent text-sm rounded-md">{mine ? "Apply again" : "Apply"}</button>
             </form>
           ) : <p className="text-sm text-gray-500">{j.status === "open" ? "Your role can't apply." : "This role isn't open."}</p>}
         </div>
@@ -382,10 +383,10 @@ function JobPage({ companyId, id }) {
       {j.can_manage && (
         <div className="space-y-3">
           <p className="text-sm font-semibold text-gray-900">Applicants ({(j.applications || []).filter((a) => a.status !== "withdrawn").length})</p>
-          {(j.applications || []).length === 0 && <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-sm text-gray-400">No applications yet. People whose skills match were told about the role.</div>}
+          {(j.applications || []).length === 0 && <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-sm text-gray-400">No applications yet. People whose skills match were told about the role.</div>}
           {STAGES.map(([k, l]) => byStage(k).length > 0 && (
             <div key={k} className="space-y-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{l} · {byStage(k).length}</p>
+              <p className="text-xs font-medium text-gray-500">{l} · {byStage(k).length}</p>
               <div className="grid md:grid-cols-2 gap-3">{byStage(k).map((a) => <Applicant key={a.id} a={a} companyId={companyId} onChange={load} />)}</div>
             </div>
           ))}

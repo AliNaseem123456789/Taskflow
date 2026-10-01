@@ -69,22 +69,22 @@ function Breakdown({ task, opts, onAdded }) {
       {state.data.checklist.map((c, i) => row(`c${i}`, c))}
       {state.data.notes && <p className="text-xs text-gray-500 italic">{state.data.notes}</p>}
       <div className="flex gap-2 pt-1">
-        <button onClick={add} disabled={state.loading} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md disabled:opacity-50">Add selected</button>
+        <button onClick={add} disabled={state.loading} className="px-3 py-1.5 btn-accent text-xs rounded-md disabled:opacity-50">Add selected</button>
         <button onClick={() => setState({ loading: false, data: null, error: "" })} className="px-3 py-1.5 text-xs text-gray-500">Dismiss</button>
       </div>
     </div>
   );
 }
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
 
 function Section({ icon: Icon, title, extra, children }) {
   return (
-    <section className="bg-white border border-gray-200 rounded-lg p-4">
+    <section className="bg-white border border-gray-200 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon size={14} className="text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-900 flex-1">{title}</h2>
+        <h2 className="font-display text-[17px] font-bold text-gray-900 flex-1">{title}</h2>
         {extra}
       </div>
       {children}
@@ -222,7 +222,7 @@ export default function TaskDetail() {
       )}
 
       {/* people + column */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
         {task.company_id && (
           <>
             <p><span className="text-gray-400">Assigned to</span> <span className="text-gray-900">{who(task.assignee) || "—"}</span></p>
@@ -261,7 +261,7 @@ export default function TaskDetail() {
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
       {/* the task row itself: status, edit, comments */}
-      <div className="bg-white border border-gray-200 rounded-lg">
+      <div className="bg-white border border-gray-200 rounded-xl">
         <TaskList
           tasks={[task]}
           showComments

@@ -42,7 +42,7 @@ export default function CustomCalendar({ currentDate, tasks, onDateClick, onPrev
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <button
@@ -51,7 +51,7 @@ export default function CustomCalendar({ currentDate, tasks, onDateClick, onPrev
         >
           <ChevronLeft size={18} />
         </button>
-        <h2 className="text-sm font-semibold text-gray-900">
+        <h2 className="font-display text-[17px] font-bold text-gray-900">
           {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
         </h2>
         <button
@@ -96,7 +96,7 @@ export default function CustomCalendar({ currentDate, tasks, onDateClick, onPrev
                   <span
                     className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
                       isToday
-                        ? "bg-gray-900 text-white"
+                        ? "btn-accent "
                         : "text-gray-600"
                     }`}
                   >

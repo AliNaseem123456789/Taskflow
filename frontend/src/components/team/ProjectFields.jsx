@@ -3,7 +3,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { FIELD_KINDS } from "../../utils/fields";
 
-const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // The lead's editor for a project's custom fields
 export default function ProjectFields({ team, project, onClose, onChanged }) {
@@ -21,7 +21,7 @@ export default function ProjectFields({ team, project, onClose, onChanged }) {
   const splitOptions = (s) => s.split(",").map((o) => o.trim()).filter(Boolean);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 space-y-3">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-900">Fields on this project's tasks</p>
@@ -62,7 +62,7 @@ export default function ProjectFields({ team, project, onClose, onChanged }) {
             {FIELD_KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
           {form.kind === "select" && <input className={`${inputCls} flex-1 min-w-40`} placeholder="Choices, comma separated" value={form.options} onChange={(e) => setForm({ ...form, options: e.target.value })} />}
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md"><Plus size={13} /> Add field</button>
+          <button className="flex items-center gap-1 px-3 py-1.5 btn-accent text-sm rounded-md"><Plus size={13} /> Add field</button>
         </form>
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}

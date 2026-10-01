@@ -41,21 +41,21 @@ export default function WorkspaceSwitcher({ onNavigate }) {
     <div ref={ref} className="relative px-3 pt-3">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-left"
+        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-left shadow-[0_1px_0_rgba(0,0,0,0.03)]"
         title="Switch workspace"
       >
-        <span className="w-6 h-6 rounded bg-gray-900 text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
+        <span className={`w-8 h-8 rounded-lg tile ${current ? "tile-violet is-on" : "tile-indigo is-on"} font-display text-sm font-bold`}>
           {current ? current.name[0].toUpperCase() : <User size={12} />}
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13px] font-medium text-gray-900 truncate">{current ? current.name : "Personal"}</span>
-          <span className="block text-[11px] text-gray-400">{current ? ROLE_LABELS[current.role] : "Only you"}</span>
+          <span className="block text-[14px] font-semibold text-gray-900 truncate">{current ? current.name : "Personal"}</span>
+          <span className="block text-[12px] text-gray-500">{current ? ROLE_LABELS[current.role] : "Only you"}</span>
         </span>
         <ChevronsUpDown size={14} className="text-gray-400 shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 max-h-96 overflow-y-auto">
+        <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 max-h-96 overflow-y-auto">
           <Item active={!chosen} icon={User} title="Personal" subtitle="Your private dones" onClick={() => switchWorkspace("")} />
           {companies.length > 0 && <div className="border-t border-gray-100 my-1" />}
           {companies.map((c) => (

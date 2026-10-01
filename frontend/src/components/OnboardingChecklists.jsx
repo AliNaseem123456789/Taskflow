@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { apiRequest } from "../utils/api";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const emptyItem = () => ({ title: "", days: 0 });
 
 // One checklist being edited (new or existing)
@@ -10,7 +10,7 @@ function Editor({ initial, teams, onSave, onCancel }) {
   const [form, setForm] = useState(initial);
   const setItem = (i, patch) => setForm({ ...form, items: form.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+    <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
       <div className="flex flex-wrap gap-2">
         <input required className={`${inputCls} flex-1 min-w-[180px]`} placeholder="Checklist name, e.g. Engineering onboarding"
           value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -46,7 +46,7 @@ function Editor({ initial, teams, onSave, onCancel }) {
         Give this to everyone who joins (unless an invite picks another checklist)
       </label>
       <div className="flex gap-2">
-        <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Save checklist</button>
+        <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Save checklist</button>
         <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
       </div>
     </form>
@@ -114,7 +114,7 @@ export default function OnboardingChecklists({ company }) {
         editing === t.id ? (
           <Editor key={t.id} initial={{ ...t, team_id: t.team_id || "" }} teams={teams} onSave={save(t)} onCancel={() => setEditing(null)} />
         ) : (
-          <div key={t.id} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={t.id} className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-900 flex-1">
                 {t.name}

@@ -3,6 +3,7 @@ import { Pencil, Trash2, Target } from "lucide-react";
 import GoalBar from "../components/GoalBar";
 import GoalForm from "../components/GoalForm";
 import { apiRequest } from "../utils/api";
+import AreaTile from "../components/AreaTile";
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState(null);
@@ -33,18 +34,18 @@ export default function GoalsPage() {
   return (
     <div className="p-6 lg:p-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Goals</h1>
+        <h1 className="page-title"><AreaTile />Goals</h1>
         <p className="text-sm text-gray-500 mt-1">
           Set a number of Done tasks to reach each week or month. Progress resets at the start of each period.
         </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">New goal</h2>
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+        <h2 className="font-display text-[17px] font-bold text-gray-900 mb-3">New goal</h2>
         <GoalForm tags={tags} onSubmit={create} />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-5">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
         {goals === null && <p className="text-sm text-gray-400">Loading…</p>}
         {goals?.length === 0 && (
           <div className="text-center py-8 text-gray-400">

@@ -4,6 +4,7 @@ import { Plane } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
+import AreaTile from "../components/AreaTile";
 
 const LOAD = {
   light: { label: "Room for more", chip: "bg-blue-50 text-blue-700", bar: "bg-blue-400" },
@@ -34,7 +35,7 @@ export default function Workload() {
     <div className="p-6 lg:p-8 max-w-5xl">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Workload</h1>
+          <h1 className="page-title"><AreaTile />Workload</h1>
           <p className="text-sm text-gray-500 mt-1">Open company work per person, with time off. Personal dones are never included.</p>
         </div>
         <select className="text-sm px-3 py-2 border border-gray-200 rounded-md bg-white" value={team} onChange={(e) => setTeam(e.target.value)}>
@@ -44,7 +45,7 @@ export default function Workload() {
       </div>
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 border-b border-gray-100">

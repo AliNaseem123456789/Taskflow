@@ -4,7 +4,7 @@ import { apiRequest } from "../../utils/api";
 import { useLiveEvent } from "../../utils/live";
 import GoalBar from "../GoalBar";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // Team goals count Done tasks from every member (optionally one project)
 export default function TeamGoalsTab({ team }) {
@@ -44,7 +44,7 @@ export default function TeamGoalsTab({ team }) {
   return (
     <div className="space-y-4">
       {isAdmin && (
-        <form onSubmit={create} className="bg-white border border-gray-200 rounded-lg p-4">
+        <form onSubmit={create} className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex flex-wrap gap-2">
             <input className={`${inputCls} flex-1 min-w-[180px]`} required placeholder="e.g. Close 30 billing tasks"
               value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -58,13 +58,13 @@ export default function TeamGoalsTab({ team }) {
               <option value="">Any project</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <button className="px-3 py-2 bg-gray-900 text-white text-sm rounded-md">Add team goal</button>
+            <button className="px-3 py-2 btn-accent text-sm rounded-md">Add team goal</button>
           </div>
           {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
         </form>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-5">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
         {goals === null && <p className="text-sm text-gray-400">Loading…</p>}
         {goals?.length === 0 && (
           <div className="text-center py-6 text-gray-400">

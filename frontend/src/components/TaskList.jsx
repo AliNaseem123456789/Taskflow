@@ -5,6 +5,8 @@ import { getStoredUser } from "../api/api";
 import CommentPanel from "./CommentPanel";
 import TaskMeta from "./TaskMeta";
 import TaskEditModal from "./TaskEditModal";
+import EmptyState from "./ui/EmptyState";
+import { CheckSquareOffset } from "@phosphor-icons/react";
 
 const STATUS = {
   Done:    { icon: CheckCircle, active: "text-emerald-600", badge: "bg-emerald-50 text-emerald-700" },
@@ -140,9 +142,7 @@ function TaskRow({ task, onStatusChange, onDelete, onUpdate, defaultShowComments
 export default function TaskList({ tasks, onStatusChange, onDelete, onUpdate, showComments = false, emptyText = "No tasks yet for this day." }) {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="px-4 py-10 text-center">
-        <p className="text-sm text-gray-400">{emptyText}</p>
-      </div>
+      <EmptyState icon={CheckSquareOffset} title={emptyText} text="Things you finish or are working on show up here." />
     );
   }
 

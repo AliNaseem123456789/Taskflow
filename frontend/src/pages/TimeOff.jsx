@@ -5,8 +5,9 @@ import { apiRequest } from "../utils/api";
 import { getWorkspace, getStoredUser } from "../api/api";
 import { useWorkspace } from "../utils/workspace";
 import { localDate, shiftDate } from "../utils/date";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const KIND = { vacation: "Vacation", sick: "Sick", personal: "Personal", other: "Other", away: "Away" };
 const STATUS_CHIP = { pending: "bg-amber-50 text-amber-700", approved: "bg-emerald-50 text-emerald-700", rejected: "bg-rose-50 text-rose-700" };
 const who = (u) => u?.name || u?.email;
@@ -21,7 +22,7 @@ function AwayCalendar({ entries, holidays, start }) {
   const holidayOn = Object.fromEntries(holidays.map((h) => [h.date, h.name]));
   const cell = (uid, d) => entries.find((e) => e.user_id === uid && e.status !== "rejected" && e.start_date <= d && e.end_date >= d);
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 overflow-x-auto">
+    <div className="bg-white border border-gray-200 rounded-xl p-3 overflow-x-auto">
       <table className="text-xs border-separate border-spacing-0">
         <thead>
           <tr>
@@ -117,11 +118,11 @@ export default function TimeOff() {
   return (
     <div className="p-6 lg:p-8 max-w-5xl space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Time off</h1>
+        <h1 className="page-title"><AreaTile />Time off</h1>
         <p className="text-sm text-gray-500 mt-1">Book days away and see who's out. Others see when you're away, not why.</p>
       </div>
 
-      <form onSubmit={request} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <form onSubmit={request} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
         <div className="flex flex-wrap gap-2 items-center">
           <select className={inputCls} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
             {["vacation", "sick", "personal", "other"].map((k) => <option key={k} value={k}>{KIND[k]}</option>)}
@@ -140,7 +141,7 @@ export default function TimeOff() {
         </div>
         <input className={`${inputCls} w-full`} placeholder="Note for your manager (optional)" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800"><Plane size={14} /> Book time off</button>
+          <button className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md"><Plane size={14} /> Book time off</button>
           {msg && <span className="text-xs text-emerald-600">{msg}</span>}
           {error && <span className="text-xs text-red-600">{error}</span>}
         </div>
@@ -149,15 +150,15 @@ export default function TimeOff() {
 
       {toDecide.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-2">Waiting for you ({toDecide.length})</h2>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Waiting for you ({toDecide.length})</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
             {toDecide.map((t) => (
               <div key={t.id} className="px-4 py-3 flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px]">
                   <p className="text-sm text-gray-900"><b className="font-medium">{who(t.person)}</b> · {KIND[t.kind]} · {range(t)} <span className="text-gray-400">({t.days} {t.days === 1 ? "day" : "days"})</span></p>
                   {t.note && <p className="text-xs text-gray-500">“{t.note}”</p>}
                 </div>
-                <button className="flex items-center gap-1 px-2.5 py-1 bg-gray-900 text-white text-xs rounded-md"
+                <button className="flex items-center gap-1 px-2.5 py-1 btn-accent text-xs rounded-md"
                   onClick={() => run(() => apiRequest(`/companies/${companyId}/time-off/${t.id}/decide`, "POST", { decision: "approve" }))}><Check size={12} /> Approve</button>
                 <button className="flex items-center gap-1 px-2.5 py-1 border border-gray-200 text-xs rounded-md hover:bg-gray-50"
                   onClick={() => run(() => apiRequest(`/companies/${companyId}/time-off/${t.id}/decide`, "POST", { decision: "reject" }))}><X size={12} /> Decline</button>
@@ -168,14 +169,14 @@ export default function TimeOff() {
       )}
 
       <div>
-        <h2 className="text-sm font-semibold text-gray-900 mb-2">Who's away · next 4 weeks</h2>
+        <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Who's away · next 4 weeks</h2>
         <AwayCalendar entries={calendar} holidays={holidays} start={start} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-2">Your time off</h2>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Your time off</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
             {mine.length === 0 && <p className="p-4 text-sm text-gray-400">Nothing booked.</p>}
             {mine.map((t) => (
               <div key={t.id} className="px-4 py-2.5 flex items-center gap-2">
@@ -192,8 +193,8 @@ export default function TimeOff() {
           </div>
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-2">Company holidays</h2>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Company holidays</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
             {upcomingHolidays.length === 0 && <p className="p-4 text-sm text-gray-400">None coming up.</p>}
             {upcomingHolidays.map((h) => (
               <div key={h.id} className="px-4 py-2.5 flex items-center gap-2">

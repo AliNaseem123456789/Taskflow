@@ -23,15 +23,15 @@ export default function AiUsage({ company }) {
         {[["Today", `${data.requests_today} / ${data.limit_company}`, "company daily limit"],
           ["Last 30 days", data.requests_30d, "requests"],
           ["Per person", data.limit_user, "requests a day"]].map(([label, value, note]) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={label} className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
+            <p className="font-display text-[28px] leading-none font-bold text-gray-900 mt-1.5">{value}</p>
             <p className="text-[11px] text-gray-400">{note}</p>
           </div>
         ))}
       </div>
       <div className="grid md:grid-cols-2 gap-5">
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           <p className="px-4 py-2 text-xs font-medium text-gray-500">By feature (30 days)</p>
           {data.by_feature.length === 0 && <p className="px-4 py-3 text-sm text-gray-400">No AI used yet.</p>}
           {data.by_feature.map((f) => (
@@ -41,7 +41,7 @@ export default function AiUsage({ company }) {
             </div>
           ))}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           <p className="px-4 py-2 text-xs font-medium text-gray-500">By person (30 days)</p>
           {data.by_person.length === 0 && <p className="px-4 py-3 text-sm text-gray-400">No AI used yet.</p>}
           {data.by_person.map((p) => (

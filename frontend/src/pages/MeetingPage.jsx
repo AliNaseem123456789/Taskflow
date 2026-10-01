@@ -8,7 +8,7 @@ import { useLiveEvent } from "../utils/live";
 import { kindLabel } from "../utils/meetings";
 import MeetingAI from "../components/MeetingAI";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
 const RESPONSE = { yes: "Going", no: "Not going", maybe: "Maybe", pending: "No reply" };
 const RESPONSE_DOT = { yes: "bg-emerald-500", no: "bg-rose-500", maybe: "bg-amber-500", pending: "bg-gray-300" };
@@ -180,7 +180,7 @@ export default function MeetingPage() {
           </button>
           {m.can_note && m.status === "scheduled" && (
             <button onClick={() => act(() => apiRequest(`${base}/finish`, "POST", {}), (o) => `Done. ${o.tasks_created} task(s) created and notes sent.`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+              className="flex items-center gap-1.5 px-3 py-1.5 btn-accent text-sm rounded-md">
               <CheckCircle2 size={14} /> Finish & send notes
             </button>
           )}
@@ -200,7 +200,7 @@ export default function MeetingPage() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* people */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {m.attendees.map((a) => (
             <span key={a.id} className="flex items-center gap-1.5 text-sm text-gray-700" title={RESPONSE[a.response]}>
@@ -213,7 +213,7 @@ export default function MeetingPage() {
             <span className="text-gray-500">Are you coming?</span>
             {["yes", "maybe", "no"].map((r) => (
               <button key={r} onClick={() => act(() => apiRequest(`${base}/respond`, "POST", { response: r }))}
-                className={`px-2.5 py-1 rounded-md border ${m.my_response === r ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 hover:bg-gray-50"}`}>
+                className={`px-2.5 py-1 rounded-md border ${m.my_response === r ? "btn-accent border-indigo-600" : "border-gray-200 hover:bg-gray-50"}`}>
                 {RESPONSE[r]}
               </button>
             ))}
@@ -224,7 +224,7 @@ export default function MeetingPage() {
       {!m.can_note && <p className="text-xs text-gray-400">You can read this meeting; only the people in it add notes.</p>}
 
       <div className="grid lg:grid-cols-2 gap-5">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           <AutoText label="Agenda" value={m.agenda} disabled={!m.can_note} rows={7}
             onSave={(agenda) => apiRequest(base, "PUT", { agenda })} />
           {(m.kind === "one_on_one" || m.kind === "meeting" || m.kind === "review") && (
@@ -235,7 +235,7 @@ export default function MeetingPage() {
             </div>
           )}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           <AutoText label="Notes" value={m.notes} disabled={!m.can_note} rows={10} placeholder="What was said…"
             onSave={(notes) => apiRequest(base, "PUT", { notes })} />
         </div>
@@ -269,13 +269,13 @@ export default function MeetingPage() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-5">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm font-semibold text-gray-900 flex items-center gap-1.5"><Check size={14} /> Decisions</p>
           {items("decision").length === 0 && <p className="text-xs text-gray-400 mt-1">Write down what was agreed, so nobody has to remember.</p>}
           {items("decision").map((i) => <ItemRow key={i.id} i={i} check={false} />)}
           {m.can_note && <ItemAdder placeholder="We decided…" onAdd={addItem("decision")} />}
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm font-semibold text-gray-900">Action items</p>
           {items("action").length === 0 && <p className="text-xs text-gray-400 mt-1">Each one becomes a task for its owner when you finish the meeting.</p>}
           {items("action").map((i) => <ItemRow key={i.id} i={i} />)}

@@ -10,8 +10,8 @@ export const STATUS_BADGE = {
 export const PRIORITIES = [
   { value: "low", label: "Low", badge: "bg-gray-100 text-gray-600" },
   { value: "medium", label: "Medium", badge: "bg-gray-100 text-gray-600" },
-  { value: "high", label: "High", badge: "bg-amber-50 text-amber-700" },
-  { value: "urgent", label: "Urgent", badge: "bg-rose-50 text-rose-700" },
+  { value: "high", label: "High", badge: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20" },
+  { value: "urgent", label: "Urgent", badge: "bg-rose-600 text-white" },
 ];
 export const priorityInfo = (value) => PRIORITIES.find((p) => p.value === value) || PRIORITIES[1];
 

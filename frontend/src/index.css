@@ -3,13 +3,20 @@
 /* `dark:` classes follow the .dark class on <html> (set by utils/theme.js) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Type: Bricolage Grotesque for titles and big numbers, Figtree for everything else */
+@theme {
+  --font-sans: "Figtree Variable", "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-gray-50: #f5f6fa; /* cool off-white page background */
+}
+
 :root {
   --color-bg: #fafafa;
   --color-surface: #ffffff;
   --color-border: #e5e7eb;
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
-  --color-accent: #111827;
+  --color-accent: #4f46e5;
 }
 
 * {
@@ -18,8 +25,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-bg);
@@ -31,6 +37,67 @@ select,
 textarea,
 button {
   font-family: inherit;
+}
+
+/* ── Areas: each part of the app has a hue (see utils/areas.js) ───────── */
+:root {
+  --tile-indigo-bg: #e9e8ff; --tile-indigo-fg: #4f46e5;
+  --tile-amber-bg:  #ffefd2; --tile-amber-fg:  #c56a07;
+  --tile-sky-bg:    #dcf0fd; --tile-sky-fg:    #0477bf;
+  --tile-teal-bg:   #d3f4ec; --tile-teal-fg:   #0b8170;
+  --tile-violet-bg: #efe5ff; --tile-violet-fg: #7a3ae6;
+  --tile-rose-bg:   #ffe3e9; --tile-rose-fg:   #db2052;
+}
+html.dark {
+  --tile-indigo-bg: #262a5c; --tile-indigo-fg: #a5a6ff;
+  --tile-amber-bg:  #3d2c12; --tile-amber-fg:  #fbbf4e;
+  --tile-sky-bg:    #10324a; --tile-sky-fg:    #6cc4f7;
+  --tile-teal-bg:   #0f3a34; --tile-teal-fg:   #4fd6bd;
+  --tile-violet-bg: #33215a; --tile-violet-fg: #c4a2ff;
+  --tile-rose-bg:   #43182a; --tile-rose-fg:   #ff8aa6;
+}
+
+@layer components {
+  .tile { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 0.75rem; }
+  .tile-indigo { background: var(--tile-indigo-bg); color: var(--tile-indigo-fg); }
+  .tile-amber  { background: var(--tile-amber-bg);  color: var(--tile-amber-fg); }
+  .tile-sky    { background: var(--tile-sky-bg);    color: var(--tile-sky-fg); }
+  .tile-teal   { background: var(--tile-teal-bg);   color: var(--tile-teal-fg); }
+  .tile-violet { background: var(--tile-violet-bg); color: var(--tile-violet-fg); }
+  .tile-rose   { background: var(--tile-rose-bg);   color: var(--tile-rose-fg); }
+  /* the active / brand tile: solid hue, icon in the page colour */
+  .tile.is-on { color: var(--color-gray-50); }
+  .tile-indigo.is-on { background: var(--tile-indigo-fg); }
+  .tile-amber.is-on  { background: var(--tile-amber-fg); }
+  .tile-sky.is-on    { background: var(--tile-sky-fg); }
+  .tile-teal.is-on   { background: var(--tile-teal-fg); }
+  .tile-violet.is-on { background: var(--tile-violet-fg); }
+  .tile-rose.is-on   { background: var(--tile-rose-fg); }
+  .text-hue-indigo { color: var(--tile-indigo-fg); }
+  .text-hue-amber  { color: var(--tile-amber-fg); }
+  .text-hue-sky    { color: var(--tile-sky-fg); }
+  .text-hue-teal   { color: var(--tile-teal-fg); }
+  .text-hue-violet { color: var(--tile-violet-fg); }
+  .text-hue-rose   { color: var(--tile-rose-fg); }
+
+  /* Page titles: the one loud thing on every page */
+  .page-title {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--color-gray-900);
+  }
+  .page-title + p { font-size: 0.9375rem; margin-top: 0.375rem; }
+  @media (min-width: 640px) {
+    .page-title:has(.tile) + p { padding-left: 3.25rem; }
+  }
+  .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+  /* Primary actions, active pills and avatars: the indigo accent with white text in both themes */
+  .btn-accent { background-color: #4f46e5; color: #fff; }
+  .btn-accent:hover:not(:disabled) { background-color: #4338ca; }
+  html.dark .btn-accent { background-color: #5b5cf0; color: #fff; }
+  html.dark .btn-accent:hover:not(:disabled) { background-color: #6d6ff6; }
 }
 
 /* Scrollbar */
@@ -113,6 +180,20 @@ html.dark {
   --color-rose-200: oklch(40% 0.09 15);
   --color-rose-600: oklch(72% 0.17 17);
   --color-rose-700: oklch(77% 0.15 17);
+
+  --color-indigo-50: oklch(27% 0.06 278);
+  --color-indigo-100: oklch(32% 0.08 278);
+  --color-indigo-200: oklch(40% 0.11 278);
+  --color-indigo-500: oklch(66% 0.17 278);
+  --color-indigo-600: oklch(60% 0.2 278);
+  --color-indigo-700: oklch(80% 0.11 278);
+
+  --color-violet-50: oklch(28% 0.06 295);
+  --color-violet-700: oklch(80% 0.12 295);
+  --color-sky-50: oklch(28% 0.05 235);
+  --color-sky-700: oklch(80% 0.1 235);
+  --color-teal-50: oklch(28% 0.05 180);
+  --color-teal-700: oklch(80% 0.1 180);
 
   --color-red-50: oklch(28% 0.06 20);
   --color-red-100: oklch(33% 0.07 20);

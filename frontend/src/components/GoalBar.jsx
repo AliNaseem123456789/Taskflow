@@ -26,7 +26,7 @@ export default function GoalBar({ goal, actions }) {
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${done ? "bg-emerald-500" : "bg-gray-900"}`}
+          className={`h-full rounded-full transition-all duration-500 ${done ? "bg-emerald-500" : "btn-accent"}`}
           style={{ width: `${pct}%` }}
         />
       </div>

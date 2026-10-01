@@ -5,17 +5,27 @@ import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
 import { useMyProjects } from "../utils/projects";
+import AreaTile from "../components/AreaTile";
+import { CheckCircle, PlusCircle, Tray, CalendarX, HourglassMedium, Target, ChartLine } from "@phosphor-icons/react";
 
 const selectCls = "text-sm px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-900";
 const fmtWeek = (w) => new Date(`${w}T12:00:00`).toLocaleDateString([], { month: "short", day: "numeric" });
 const dash = (v, suffix = "") => (v === null || v === undefined ? "–" : `${v}${suffix}`);
 
+// icon and colour for each headline number
+const TILE_LOOK = {
+  Finished: [CheckCircle, "teal"], Added: [PlusCircle, "indigo"], "Open now": [Tray, "sky"],
+  "Overdue now": [CalendarX, "rose"], "Days to finish": [HourglassMedium, "amber"], "On time": [Target, "violet"],
+};
+
 function Tile({ label, value, note, tone }) {
+  const [Icon, hue] = TILE_LOOK[label] || [ChartLine, "indigo"];
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${tone === "bad" ? "text-rose-600" : "text-gray-900"}`}>{value}</p>
-      {note && <p className="text-[11px] text-gray-400 mt-0.5">{note}</p>}
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <span className={`tile tile-${hue} w-8 h-8 rounded-lg mb-3`}><Icon size={18} weight="fill" /></span>
+      <p className="text-[13px] font-medium text-gray-500">{label}</p>
+      <p className={`font-display text-[28px] leading-none font-bold mt-1.5 ${tone === "bad" ? "text-rose-600" : "text-gray-900"}`}>{value}</p>
+      {note && <p className="text-[11px] text-gray-400 mt-1.5">{note}</p>}
     </div>
   );
 }
@@ -41,8 +51,8 @@ const axisProps = { tick: { fill: "var(--viz-axis)", fontSize: 11 }, axisLine: f
 function Table({ title, rows, nameOf, empty }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-900 mb-2">{title}</h2>
-      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">{title}</h2>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
@@ -101,7 +111,7 @@ export default function Analytics() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Analytics</h1>
+        <h1 className="page-title"><AreaTile />Analytics</h1>
         <p className="text-sm text-gray-500 mt-1">Company work only — personal dones are never counted.</p>
       </div>
 
@@ -135,9 +145,9 @@ export default function Analytics() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-5">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-900">Finished vs added, per week</h2>
+                <h2 className="font-display text-[17px] font-bold text-gray-900">Finished vs added, per week</h2>
                 <div className="flex gap-3 text-xs text-gray-600">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "var(--viz-1)" }} /> Finished</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "var(--viz-2)" }} /> Added</span>
@@ -158,8 +168,8 @@ export default function Analytics() {
               <p className="text-[11px] text-gray-400 mt-2">More added than finished week after week means the backlog is growing.</p>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">Days from start to done (median), per week</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <h2 className="font-display text-[17px] font-bold text-gray-900 mb-3">Days from start to done (median), per week</h2>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data.weekly} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
@@ -176,8 +186,8 @@ export default function Analytics() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Open work by priority</h2>
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Open work by priority</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {data.open_by_priority.map((p) => (
                 <div key={p.priority}>

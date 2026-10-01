@@ -8,8 +8,11 @@ import { localDate, parseLocalDate, shiftDate } from "../utils/date";
 import { fmtClock, fmtMinutes, onTimerChange, parseDuration, useTimer } from "../utils/timer";
 import { useCompanyPeople } from "../utils/companyPeople";
 import { useMyProjects } from "../utils/projects";
+import AreaTile from "../components/AreaTile";
+import StatCard from "../components/ui/StatCard";
+import { ClockCountdown, CurrencyCircleDollar, ListBullets } from "@phosphor-icons/react";
 
-const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const mondayOf = (d) => shiftDate(d, -((parseLocalDate(d).getDay() + 6) % 7));
 const short = (d) => parseLocalDate(d).toLocaleDateString([], { month: "short", day: "numeric" });
@@ -95,7 +98,7 @@ function MyWeek() {
   return (
     <div className="space-y-5">
       {/* timer */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap items-center gap-2">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-2">
         {running ? (
           <>
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
@@ -111,7 +114,7 @@ function MyWeek() {
           <>
             <span className="text-sm text-gray-500">Track time on</span>
             <TaskPicker tasks={tasks} value={timerTask} onChange={setTimerTask} label="Timer task" />
-            <button onClick={() => act(() => start(timerTask || null))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+            <button onClick={() => act(() => start(timerTask || null))} className="flex items-center gap-1.5 px-3 py-1.5 btn-accent text-sm rounded-md">
               <Play size={12} className="fill-current" /> Start timer
             </button>
           </>
@@ -126,7 +129,7 @@ function MyWeek() {
         {monday !== mondayOf(today) && <button onClick={() => setMonday(mondayOf(today))} className="text-xs text-gray-500 hover:text-gray-900 underline">This week</button>}
         <span className="ml-auto text-sm text-gray-500">Total <b className="text-gray-900 font-semibold">{fmtMinutes(data?.total_minutes)}</b></span>
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-gray-500 border-b border-gray-100">
@@ -163,7 +166,7 @@ function MyWeek() {
       </div>
 
       {/* add */}
-      <form onSubmit={add} className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap items-center gap-2">
+      <form onSubmit={add} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-2">
         <TaskPicker tasks={tasks} value={form.task} onChange={(task) => setForm({ ...form, task })} />
         <input type="date" className={inputCls} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} aria-label="Day" />
         <input className={`${inputCls} w-24`} placeholder="1:30" aria-label="Time spent" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
@@ -171,13 +174,13 @@ function MyWeek() {
         {inCompany && (
           <label className="flex items-center gap-1.5 text-xs text-gray-600"><input type="checkbox" checked={form.billable} onChange={(e) => setForm({ ...form, billable: e.target.checked })} /> Billable</label>
         )}
-        <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Log time</button>
+        <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Log time</button>
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {/* entries */}
       {(data?.entries.length || 0) > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
           {[...data.entries].reverse().map((e) => (
             <div key={e.id} className="flex items-center gap-3 px-4 py-2 text-sm group">
               <span className="text-xs text-gray-400 w-20 shrink-0">{short(e.work_date)}</span>
@@ -191,7 +194,7 @@ function MyWeek() {
                 <>
                   <input className={`${inputCls} w-40`} value={editing.note} onChange={(ev) => setEditing({ ...editing, note: ev.target.value })} aria-label="Edit note" />
                   <input className={`${inputCls} w-20`} value={editing.duration} onChange={(ev) => setEditing({ ...editing, duration: ev.target.value })} aria-label="Edit time" />
-                  <button onClick={saveEdit} className="text-xs px-2 py-1 bg-gray-900 text-white rounded">Save</button>
+                  <button onClick={saveEdit} className="text-xs px-2 py-1 btn-accent rounded">Save</button>
                   <button onClick={() => setEditing(null)} className="text-xs text-gray-500">Cancel</button>
                 </>
               ) : (
@@ -283,14 +286,11 @@ function Report() {
             {data.scope === "company" ? "Everyone's time in the company." : data.scope === "teams" ? "Your time, plus the teams you lead or manage." : "Only your own time."} Personal time is never included.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[["Logged", fmtMinutes(data.total_minutes)], ["Billable", fmtMinutes(data.billable_minutes)], ["Entries", data.groups.reduce((s, g) => s + g.entries, 0)]].map(([l, v]) => (
-              <div key={l} className="bg-white border border-gray-200 rounded-lg p-4">
-                <p className="text-xs text-gray-500">{l}</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{v}</p>
-              </div>
+            {[["Logged", fmtMinutes(data.total_minutes), ClockCountdown, "amber"], ["Billable", fmtMinutes(data.billable_minutes), CurrencyCircleDollar, "teal"], ["Entries", data.groups.reduce((s, g) => s + g.entries, 0), ListBullets, "indigo"]].map(([l, v, icon, hue]) => (
+              <StatCard key={l} label={l} value={v} icon={icon} hue={hue} />
             ))}
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm font-semibold text-gray-900 mb-3">Hours per day</p>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -308,10 +308,10 @@ function Report() {
             <div className="flex gap-1 mb-2">
               {[["person", "People"], ["team", "Teams"], ["project", "Projects"], ["task", "Tasks (estimate vs actual)"]].map(([k, l]) => (
                 <button key={k} onClick={() => setQ({ ...q, group: k })}
-                  className={`px-3 py-1 text-xs rounded-md ${q.group === k ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{l}</button>
+                  className={`px-3 py-1 text-xs rounded-md ${q.group === k ? "btn-accent " : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{l}</button>
               ))}
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
@@ -370,7 +370,7 @@ export default function Timesheet() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><Timer size={20} /> Timesheet</h1>
+        <h1 className="page-title"><AreaTile /> Timesheet</h1>
         <p className="text-sm text-gray-500 mt-1">
           {companyId ? "Time you've spent on this company's work." : "All your time — personal and company work. Personal time is only ever visible to you."}
         </p>
@@ -378,7 +378,7 @@ export default function Timesheet() {
       {companyId && (
         <div className="flex gap-6 border-b border-gray-200">
           {[["week", "My week"], ["report", "Report"]].map(([k, l]) => (
-            <button key={k} onClick={() => setTab(k)} className={`pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-900"}`}>{l}</button>
+            <button key={k} onClick={() => setTab(k)} className={`pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-indigo-600 text-indigo-700 font-semibold" : "border-transparent text-gray-500 hover:text-gray-900"}`}>{l}</button>
           ))}
         </div>
       )}

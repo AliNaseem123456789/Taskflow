@@ -61,7 +61,7 @@ export default function TagInput({ selectedTags = [], onChange, allTags = [], on
     <div ref={ref} className="relative">
       {/* Input box */}
       <div
-        className="flex flex-wrap gap-1.5 items-center border border-gray-200 rounded-md px-2.5 py-1.5 min-h-[36px] bg-white focus-within:ring-1 focus-within:ring-gray-900 cursor-text"
+        className="flex flex-wrap gap-1.5 items-center border border-gray-200 rounded-md px-2.5 py-1.5 min-h-[36px] bg-white focus-within:ring-1 focus-within:ring-indigo-500 cursor-text"
         onClick={() => setOpen(true)}
       >
         {selectedTags.map((tag) => (
@@ -92,7 +92,7 @@ export default function TagInput({ selectedTags = [], onChange, allTags = [], on
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-md z-50 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-md z-50 overflow-hidden">
           {/* Existing tags */}
           {filtered.length > 0 && (
             <div className="py-1">
@@ -117,7 +117,7 @@ export default function TagInput({ selectedTags = [], onChange, allTags = [], on
           {/* Create new */}
           {input.trim() && !alreadyExists && (
             <div className="border-t border-gray-100 p-2.5">
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-2">
+              <p className="text-[11px] text-gray-400 font-semibold mb-2">
                 Create tag
               </p>
               {/* Color picker */}
@@ -161,4 +161,4 @@ export default function TagInput({ selectedTags = [], onChange, allTags = [], on
       )}
     </div>
   );
-}
+}

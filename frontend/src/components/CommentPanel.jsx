@@ -131,12 +131,12 @@ export default function CommentPanel({ taskId }) {
           onKeyDown={onKeyDown}
           onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
           placeholder="Add a comment… type @ to mention a teammate"
-          className="flex-1 text-xs border border-gray-200 rounded-md px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-gray-900 placeholder:text-gray-400 bg-white"
+          className="flex-1 text-xs border border-gray-200 rounded-md px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-gray-400 bg-white"
         />
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="text-xs bg-gray-900 text-white px-2.5 py-1.5 rounded-md disabled:opacity-40 hover:bg-gray-800 transition-colors"
+          className="text-xs btn-accent px-2.5 py-1.5 rounded-md disabled:opacity-40 transition-colors"
         >
           Send
         </button>

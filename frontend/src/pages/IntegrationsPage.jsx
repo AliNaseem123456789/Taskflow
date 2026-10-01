@@ -3,24 +3,25 @@ import { useSearchParams } from "react-router-dom";
 import { Bell, Calendar, GitPullRequest, MessageSquare, Smartphone, Ticket, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { pushSupported, isPushOn, enablePush, disablePush } from "../utils/push";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const btn = "px-3 py-1.5 text-sm rounded-md disabled:opacity-50";
-const primary = `${btn} bg-gray-900 text-white hover:bg-gray-800`;
+const primary = `${btn} btn-accent `;
 const secondary = `${btn} border border-gray-200 text-gray-700 hover:bg-gray-50`;
 
 const when = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
 
 function Card({ icon: Icon, title, subtitle, status, children }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-9 h-9 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
           <Icon size={18} className="text-gray-600" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+            <h2 className="font-display text-[17px] font-bold text-gray-900">{title}</h2>
             {status}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
@@ -105,7 +106,7 @@ export default function IntegrationsPage() {
   return (
     <div className="p-6 lg:p-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Integrations</h1>
+        <h1 className="page-title"><AreaTile />Integrations</h1>
         <p className="text-sm text-gray-500 mt-1">
           Where reminders reach you, and tools that log your work automatically.
         </p>

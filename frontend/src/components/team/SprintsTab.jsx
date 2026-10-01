@@ -110,7 +110,7 @@ export default function SprintsTab({ team }) {
       {lead && (
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
           <button onClick={() => run(() => apiRequest(`${base}/sprints`, "POST", {}))}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white rounded-md text-sm"><Plus size={14} /> New sprint</button>
+            className="flex items-center gap-1 px-3 py-1.5 btn-accent rounded-md text-sm"><Plus size={14} /> New sprint</button>
           <label className="flex items-center gap-1">Estimate in
             <select className="border border-gray-200 rounded px-1.5 py-1 bg-white" value={unit}
               onChange={(e) => run(() => apiRequest(`${base}/sprint-settings`, "PUT", { estimate_unit: e.target.value }))}>
@@ -128,7 +128,7 @@ export default function SprintsTab({ team }) {
 
       {/* running sprint */}
       {current ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex flex-wrap items-start gap-3">
             <div className="flex-1 min-w-[200px]">
               <p className="text-xs text-emerald-700 font-medium">Running · {current.days_left} day{current.days_left === 1 ? "" : "s"} left</p>
@@ -144,7 +144,7 @@ export default function SprintsTab({ team }) {
               <p className="text-gray-700">{current.task_count - current.done_count} unfinished task(s). Where should they go?</p>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => run(async () => { await apiRequest(`${base}/sprints/${current.sprint.id}/close`, "POST", { carry_to: "next" }); setClosing(false); })}
-                  className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md">Move to the next sprint</button>
+                  className="px-3 py-1.5 btn-accent text-xs rounded-md">Move to the next sprint</button>
                 <button onClick={() => run(async () => { await apiRequest(`${base}/sprints/${current.sprint.id}/close`, "POST", { carry_to: "backlog" }); setClosing(false); })}
                   className="px-3 py-1.5 border border-gray-200 text-xs rounded-md bg-white">Back to the backlog</button>
                 <button onClick={() => setClosing(false)} className="px-3 py-1.5 text-xs text-gray-500">Cancel</button>
@@ -187,12 +187,12 @@ export default function SprintsTab({ team }) {
       {plannedList.map((s) => {
         const d = planned[s.id];
         return (
-          <div key={s.id} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex-1 min-w-[200px]">
                 <p className="text-xs text-gray-500">Planned · {fmt(s.start_date)} – {fmt(s.end_date)}</p>
                 {lead ? (
-                  <input className="text-sm font-semibold text-gray-900 bg-transparent outline-none border-b border-transparent focus:border-gray-300"
+                  <input className="text-sm font-semibold text-gray-900 bg-transparent outline-none border-b border-transparent focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15"
                     defaultValue={s.name} onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && run(() => apiRequest(`${base}/sprints/${s.id}`, "PUT", { name: e.target.value }))} />
                 ) : <p className="text-sm font-semibold text-gray-900">{s.name}</p>}
               </div>
@@ -202,7 +202,7 @@ export default function SprintsTab({ team }) {
               )}
               {lead && !current && (
                 <button onClick={() => run(() => apiRequest(`${base}/sprints/${s.id}/start`, "POST"))}
-                  className="flex items-center gap-1 text-xs px-3 py-1.5 bg-gray-900 text-white rounded-md"><Play size={12} /> Start</button>
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 btn-accent rounded-md"><Play size={12} /> Start</button>
               )}
               {lead && (
                 <button title="Delete sprint" onClick={() => window.confirm(`Delete ${s.name}? Its tasks go back to the backlog.`) && run(() => apiRequest(`${base}/sprints/${s.id}`, "DELETE"))}
@@ -210,7 +210,7 @@ export default function SprintsTab({ team }) {
               )}
             </div>
             {lead && (
-              <input className="mt-1 w-full text-xs text-gray-600 bg-transparent outline-none border-b border-transparent focus:border-gray-300" placeholder="Sprint goal (optional)"
+              <input className="mt-1 w-full text-xs text-gray-600 bg-transparent outline-none border-b border-transparent focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15" placeholder="Sprint goal (optional)"
                 defaultValue={s.goal || ""} onBlur={(e) => e.target.value !== (s.goal || "") && run(() => apiRequest(`${base}/sprints/${s.id}`, "PUT", { goal: e.target.value }))} />
             )}
             <div className="mt-2 divide-y divide-gray-50">
@@ -226,7 +226,7 @@ export default function SprintsTab({ team }) {
       })}
 
       {/* backlog */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <h3 className="text-sm font-semibold text-gray-900 flex-1">Backlog <span className="font-normal text-gray-400">· {backlog.length} open · {backlog.reduce((s, t) => s + (Number(t.estimate) || 0), 0)} {u}</span></h3>
           {lead && (plannedList.length > 0 || current) && (
@@ -236,7 +236,7 @@ export default function SprintsTab({ team }) {
                 {plannedList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
               <button disabled={!chosen.length} onClick={() => run(async () => { await apiRequest(`${base}/sprints/${into}/tasks`, "PUT", { add: chosen }); setPicked({}); })}
-                className="text-xs px-3 py-1.5 bg-gray-900 text-white rounded-md disabled:opacity-40">Add {chosen.length || ""} to sprint</button>
+                className="text-xs px-3 py-1.5 btn-accent rounded-md disabled:opacity-40">Add {chosen.length || ""} to sprint</button>
             </>
           )}
         </div>
@@ -251,7 +251,7 @@ export default function SprintsTab({ team }) {
 
       {/* velocity */}
       {velocity?.sprints.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold text-gray-900">Velocity</h3>
             <div className="flex gap-3 text-xs text-gray-600">
@@ -279,7 +279,7 @@ export default function SprintsTab({ team }) {
       {closed.length > 0 && (
         <div>
           <p className="text-xs font-medium text-gray-500 mb-1">Past sprints</p>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
             {closed.map((s) => (
               <div key={s.id} className="px-4 py-2 flex items-center gap-3 text-sm">
                 <span className="flex-1 text-gray-800">{s.name}</span>

@@ -92,7 +92,7 @@ export default function MeetingAI({ meeting, onChanged }) {
           {notes.actions.map((a, i) => tick(`a${i}`, a.text, [a.assignee_name, a.due_date && `due ${a.due_date}`].filter(Boolean).join(" · ")))}
           {notes.open_questions.length > 0 && <p className="text-xs text-amber-700 pt-1">Still open: {notes.open_questions.join("; ")}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={applyNotes} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md">Add selected</button>
+            <button onClick={applyNotes} className="px-3 py-1.5 btn-accent text-xs rounded-md">Add selected</button>
             <button onClick={() => setNotes(null)} className="px-3 py-1.5 text-xs text-gray-500">Dismiss</button>
             {state && <span className="text-xs text-gray-500 self-center">{state}</span>}
           </div>
@@ -113,7 +113,7 @@ export default function MeetingAI({ meeting, onChanged }) {
           {retro.actions.length > 0 && <p className="text-xs text-gray-500 pt-1">Suggested actions</p>}
           {retro.actions.map((a, i) => tick(`r${i}`, a.text, a.assignee_name))}
           <div className="flex gap-2 pt-1">
-            {retro.actions.length > 0 && <button onClick={applyRetro} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md">Add as action items</button>}
+            {retro.actions.length > 0 && <button onClick={applyRetro} className="px-3 py-1.5 btn-accent text-xs rounded-md">Add as action items</button>}
             <button onClick={() => setRetro(null)} className="px-3 py-1.5 text-xs text-gray-500">Dismiss</button>
           </div>
         </div>

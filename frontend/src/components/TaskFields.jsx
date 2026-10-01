@@ -34,10 +34,10 @@ export default function TaskFields({ task, opts }) {
 
   if (!data || data.fields.length === 0) return null;
   return (
-    <section className="bg-white border border-gray-200 rounded-lg p-4">
+    <section className="bg-white border border-gray-200 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <SlidersHorizontal size={14} className="text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-900 flex-1">Fields</h2>
+        <h2 className="font-display text-[17px] font-bold text-gray-900 flex-1">Fields</h2>
       </div>
       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
         {data.fields.map((f) => {

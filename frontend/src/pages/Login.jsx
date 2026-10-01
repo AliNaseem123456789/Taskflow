@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import api, { saveLogin, browserTimezone } from "../api/api";
+import BrandMark from "../components/ui/BrandMark";
 export default function Login() {
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -34,8 +35,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-8 h-8 bg-gray-900 rounded mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900">Welcome back</h1>
+          <div className="flex justify-center mb-4"><BrandMark size={44} word={false} /></div>
+          <h1 className="font-display text-2xl font-bold text-gray-900">Welcome back</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
@@ -56,7 +57,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
               placeholder="you@example.com"
             />
           </div>
@@ -76,7 +77,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
                 placeholder="Enter password"
               />
               <button
@@ -92,7 +93,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gray-900 text-white py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full btn-accent py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>

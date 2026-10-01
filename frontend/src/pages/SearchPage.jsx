@@ -7,7 +7,7 @@ import TaskMeta from "../components/TaskMeta";
 
 const EMPTY_FILTERS = { status: "", priority: "", tag: "", from: "", to: "" };
 const filterCls =
-  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
+  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-700";
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -75,7 +75,7 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search tasks…"
-          className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder:text-gray-400"
+          className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400"
         />
         {query && (
           <button
@@ -131,13 +131,13 @@ export default function SearchPage() {
           </p>
 
           {results.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-lg px-5 py-12 text-center">
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-12 text-center">
               <Search size={24} className="text-gray-300 mx-auto mb-3" />
               <p className="text-sm text-gray-500">No tasks found.</p>
               <p className="text-xs text-gray-400 mt-1">Try a different search term.</p>
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+            <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
               {results.map((task) => (
                 <div
                   key={task.id}

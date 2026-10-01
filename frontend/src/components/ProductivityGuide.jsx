@@ -35,7 +35,7 @@ export default function ProductivityGuide() {
     <div className="pt-14">
       {/* Header */}
       <section className="py-20 px-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           Productivity Guide
         </h1>
         <p className="text-lg text-gray-500 max-w-lg mx-auto">
@@ -49,7 +49,7 @@ export default function ProductivityGuide() {
           {tips.map(({ icon: Icon, title, text }, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-lg p-6 flex items-start gap-4"
+              className="bg-white border border-gray-200 rounded-xl p-6 flex items-start gap-4"
             >
               <div className="w-9 h-9 bg-gray-100 rounded-md flex items-center justify-center shrink-0">
                 <Icon size={18} className="text-gray-600" />
@@ -77,9 +77,9 @@ export default function ProductivityGuide() {
             ].map(({ step, label, desc }) => (
               <div
                 key={step}
-                className="bg-white border border-gray-200 rounded-lg p-5 text-center"
+                className="bg-white border border-gray-200 rounded-xl p-5 text-center"
               >
-                <div className="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-3">
+                <div className="w-8 h-8 btn-accent rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-3">
                   {step}
                 </div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">{label}</h3>
@@ -98,7 +98,7 @@ export default function ProductivityGuide() {
         <p className="text-gray-500 mb-6">Start your free trial and see the difference.</p>
         <Link
           to="/signup"
-          className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 btn-accent px-6 py-2.5 rounded-md text-sm font-medium transition-colors"
         >
           Get started
           <ArrowRight size={16} />
@@ -106,4 +106,4 @@ export default function ProductivityGuide() {
       </section>
     </div>
   );
-}
+}

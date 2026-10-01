@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import api, { saveLogin, browserTimezone } from "../api/api";
+import BrandMark from "../components/ui/BrandMark";
 export default function Signup() {
   const location = useLocation();
   const [name, setName] = useState("");
@@ -35,8 +36,8 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 pt-14">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-8 h-8 bg-gray-900 rounded mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900">Create an account</h1>
+          <div className="flex justify-center mb-4"><BrandMark size={44} word={false} /></div>
+          <h1 className="font-display text-2xl font-bold text-gray-900">Create an account</h1>
           <p className="text-sm text-gray-500 mt-1">Start tracking your progress today</p>
         </div>
 
@@ -54,7 +55,7 @@ export default function Signup() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
               placeholder="Your name"
             />
           </div>
@@ -66,7 +67,7 @@ export default function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
               placeholder="you@example.com"
             />
           </div>
@@ -79,7 +80,7 @@ export default function Signup() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
                 placeholder="Min 6 characters"
               />
               <button
@@ -95,7 +96,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gray-900 text-white py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full btn-accent py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>

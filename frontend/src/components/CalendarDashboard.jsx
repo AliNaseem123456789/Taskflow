@@ -4,6 +4,7 @@ import SummaryChart from "./SummaryChart";
 import DayModal from "./DayModal";
 import CustomCalendar from "./CustomCalender";
 import { apiRequest } from "../utils/api";
+import AreaTile from "./AreaTile";
 
 export default function CalendarDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -50,7 +51,7 @@ export default function CalendarDashboard() {
   return (
     <div className="p-6 lg:p-8 max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Calendar</h1>
+        <h1 className="page-title"><AreaTile />Calendar</h1>
         <p className="text-sm text-gray-500 mt-1">Track your daily progress at a glance</p>
       </div>
 
@@ -72,7 +73,7 @@ export default function CalendarDashboard() {
         {/* Sidebar */}
         <div className="lg:w-72 space-y-4">
           {/* Summary chart */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={16} className="text-gray-400" />
               <h3 className="text-sm font-semibold text-gray-900">Monthly Summary</h3>
@@ -81,7 +82,7 @@ export default function CalendarDashboard() {
           </div>
 
           {/* Stats */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
             {[
               ["Total Tasks", monthTasks.length],
               ["Active Days", Object.keys(grouped).length],
@@ -98,8 +99,8 @@ export default function CalendarDashboard() {
           </div>
 
           {/* Legend */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Legend</h4>
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <h4 className="text-xs font-medium text-gray-500 mb-3">Legend</h4>
             <div className="space-y-2">
               {[
                 ["bg-emerald-400", "Done"],

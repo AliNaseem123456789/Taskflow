@@ -59,7 +59,7 @@ export default function Pricing() {
     <div className="pt-14">
       {/* Header */}
       <section className="py-20 px-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           Simple, transparent pricing
         </h1>
         <p className="text-lg text-gray-500 max-w-md mx-auto">
@@ -75,12 +75,12 @@ export default function Pricing() {
               key={plan.name}
               className={`rounded-lg border p-6 flex flex-col ${
                 plan.highlighted
-                  ? "border-gray-900 ring-1 ring-gray-900"
+                  ? "border-indigo-600 ring-1 ring-indigo-500"
                   : "border-gray-200"
               }`}
             >
               {plan.highlighted && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-900 mb-4">
+                <span className="text-[11px] font-semibold text-gray-900 mb-4">
                   Most popular
                 </span>
               )}
@@ -104,7 +104,7 @@ export default function Pricing() {
                 to={plan.href}
                 className={`block w-full text-center py-2.5 rounded-md text-sm font-semibold transition-colors ${
                   plan.highlighted
-                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    ? "btn-accent "
                     : "border border-gray-200 text-gray-900 hover:bg-gray-50"
                 }`}
               >
@@ -140,7 +140,7 @@ export default function Pricing() {
                 a: "All data is encrypted at rest and in transit. We use industry-standard security practices and never share your data.",
               },
             ].map(({ q, a }) => (
-              <div key={q} className="bg-white border border-gray-200 rounded-lg p-5">
+              <div key={q} className="bg-white border border-gray-200 rounded-xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">{q}</h3>
                 <p className="text-sm text-gray-500">{a}</p>
               </div>
@@ -155,7 +155,7 @@ export default function Pricing() {
         <p className="text-gray-500 mb-6">No credit card required.</p>
         <Link
           to="/signup"
-          className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 btn-accent px-6 py-2.5 rounded-md text-sm font-medium transition-colors"
         >
           Get started free
           <ArrowRight size={16} />
@@ -163,4 +163,4 @@ export default function Pricing() {
       </section>
     </div>
   );
-}
+}

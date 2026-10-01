@@ -95,7 +95,7 @@ export default function ProjectTimeline({ team, project }) {
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <div className="flex gap-1">
           {Object.keys(ZOOM).map((z) => (
-            <button key={z} onClick={() => setZoom(z)} className={`px-2.5 py-1 rounded-md capitalize ${zoom === z ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"}`}>{z}</button>
+            <button key={z} onClick={() => setZoom(z)} className={`px-2.5 py-1 rounded-md capitalize ${zoom === z ? "btn-accent " : "bg-gray-100 text-gray-600"}`}>{z}</button>
           ))}
         </div>
         {data.can_manage && (
@@ -120,7 +120,7 @@ export default function ProjectTimeline({ team, project }) {
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex">
         {/* task names */}
         <div className="shrink-0 border-r border-gray-100" style={{ width: LEFT }}>
           <div className="h-12 border-b border-gray-100 px-3 flex items-end pb-1 text-[11px] text-gray-400">Task</div>

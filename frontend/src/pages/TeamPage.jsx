@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, LogIn, ThumbsUp, ChevronLeft, ChevronRight, Settings, MessageCircle } from "lucide-react";
+import { Plus, LogIn, ThumbsUp, ChevronLeft, ChevronRight, Settings, MessageCircle } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { localDate, shiftDate } from "../utils/date";
 import { useLiveEvent } from "../utils/live";
@@ -9,6 +9,7 @@ import StandupTab from "../components/team/StandupTab";
 import ProjectsTab from "../components/team/ProjectsTab";
 import TeamGoalsTab from "../components/team/TeamGoalsTab";
 import SprintsTab from "../components/team/SprintsTab";
+import AreaTile from "../components/AreaTile";
 
 const TABS = [
   ["feed", "Feed"],
@@ -80,14 +81,14 @@ function NoTeam({ onCreate, onJoin }) {
           </button>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <button
             onClick={() => { setMode(null); setValue(""); setError(""); }}
             className="text-xs text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1"
           >
             <ChevronLeft size={12} /> Back
           </button>
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
+          <h2 className="font-display text-[17px] font-bold text-gray-900 mb-4">
             {mode === "create" ? "Name your team" : "Enter invite code"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -97,13 +98,13 @@ function NoTeam({ onCreate, onJoin }) {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={mode === "create" ? "e.g. Engineering, Design…" : "e.g. XK9P2A"}
-              className="w-full text-sm border border-gray-200 rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent uppercase-placeholder placeholder:normal-case"
+              className="w-full text-sm border border-gray-200 rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent uppercase-placeholder placeholder:normal-case"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}
             <button
               type="submit"
               disabled={!value.trim() || loading}
-              className="w-full bg-gray-900 text-white text-sm font-medium py-2.5 rounded-md hover:bg-gray-800 disabled:opacity-40 transition-colors"
+              className="w-full btn-accent text-sm font-medium py-2.5 rounded-md disabled:opacity-40 transition-colors"
             >
               {loading ? "…" : mode === "create" ? "Create team" : "Join team"}
             </button>
@@ -189,13 +190,12 @@ function FeedTaskCard({ task, currentUserId }) {
 // ── Member card ───────────────────────────────────────────────────────────────
 function MemberCard({ member, currentUserId }) {
   const initial = (member.name || member.email || "?")[0].toUpperCase();
-  const done = member.tasks.filter((t) => t.status === "Done").length;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-gray-900 rounded-full flex items-center justify-center text-[11px] font-bold text-white">
+          <div className="w-7 h-7 btn-accent rounded-full flex items-center justify-center text-[11px] font-bold ">
             {initial}
           </div>
           <div>
@@ -206,7 +206,7 @@ function MemberCard({ member, currentUserId }) {
               )}
             </p>
             {member.role === "admin" && (
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Admin</p>
+              <p className="text-[11px] text-gray-400">Admin</p>
             )}
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function TeamPage() {
       <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="page-title"><AreaTile />
               {activeTeam?.name}
             </h1>
             {/* Team selector if multiple */}
@@ -375,7 +375,7 @@ export default function TeamPage() {
             key={key}
             onClick={() => setTab(key)}
             className={`px-3 py-2 text-sm -mb-px border-b-2 transition-colors ${
-              tab === key ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === key ? "border-indigo-600 text-indigo-700 font-semibold" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             {label}

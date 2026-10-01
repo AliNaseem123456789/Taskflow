@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Briefcase, Diamond, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Diamond, Pencil, Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useMyProjects } from "../utils/projects";
+import AreaTile from "../components/AreaTile";
+import StatCard from "../components/ui/StatCard";
+import { Briefcase, ChartPieSlice, WarningCircle, CalendarX } from "@phosphor-icons/react";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const HEALTH = {
   on_track: { label: "On track", chip: "bg-emerald-50 text-emerald-700" },
   at_risk: { label: "At risk", chip: "bg-amber-50 text-amber-700" },
@@ -55,7 +58,7 @@ function PortfolioForm({ companyId, initial, onDone, onCancel }) {
   };
 
   return (
-    <form onSubmit={save} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+    <form onSubmit={save} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
       <input required className={`${inputCls} w-full`} placeholder="Portfolio name, e.g. Q4 launches" value={name} onChange={(e) => setName(e.target.value)} />
       <textarea rows={2} className={`${inputCls} w-full`} placeholder="What ties these projects together? (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
       <div>
@@ -74,7 +77,7 @@ function PortfolioForm({ companyId, initial, onDone, onCancel }) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
-        <button disabled={busy} className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">{initial ? "Save" : "Create portfolio"}</button>
+        <button disabled={busy} className="px-4 py-2 btn-accent text-sm rounded-md disabled:opacity-50">{initial ? "Save" : "Create portfolio"}</button>
         <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-200 text-sm rounded-md hover:bg-gray-50">Cancel</button>
       </div>
     </form>
@@ -94,11 +97,11 @@ function PortfolioList({ companyId }) {
     <div className="p-6 lg:p-8 max-w-5xl space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><Briefcase size={20} /> Portfolios</h1>
+          <h1 className="page-title"><AreaTile /> Portfolios</h1>
           <p className="text-sm text-gray-500 mt-1">Follow several projects together — progress, health and what's coming up next.</p>
         </div>
         {data?.can_create && !adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 shrink-0">
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md shrink-0">
             <Plus size={14} /> New portfolio
           </button>
         )}
@@ -107,13 +110,13 @@ function PortfolioList({ companyId }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {data === null && !error && <p className="text-sm text-gray-400">Loading…</p>}
       {data?.portfolios.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
           No portfolios yet.{data.can_create ? " Group related projects to see them side by side." : " Admins and managers can create them."}
         </div>
       )}
       <div className="grid sm:grid-cols-2 gap-4">
         {data?.portfolios.map((p) => (
-          <Link key={p.id} to={`/portfolios/${p.id}`} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-400 space-y-3">
+          <Link key={p.id} to={`/portfolios/${p.id}`} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-400 space-y-3">
             <div>
               <p className="text-sm font-semibold text-gray-900">{p.name}</p>
               {p.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>}
@@ -216,7 +219,7 @@ function PortfolioDetail({ companyId, id }) {
       ) : (
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">{p.name}</h1>
+            <h1 className="page-title"><AreaTile />{p.name}</h1>
             {p.description && <p className="text-sm text-gray-500 mt-1">{p.description}</p>}
           </div>
           {p.can_edit && (
@@ -230,19 +233,14 @@ function PortfolioDetail({ companyId, id }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          ["Projects", total],
-          ["Average progress", `${avg}%`],
-          ["At risk / off track", p.projects.filter((x) => x.health && x.health !== "on_track").length],
-          ["Overdue tasks", p.projects.reduce((s, x) => s + x.overdue, 0)],
-        ].map(([label, value]) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
-          </div>
-        ))}
+          ["Projects", total, Briefcase, "violet"],
+          ["Average progress", `${avg}%`, ChartPieSlice, "indigo"],
+          ["At risk / off track", p.projects.filter((x) => x.health && x.health !== "on_track").length, WarningCircle, "amber"],
+          ["Overdue tasks", p.projects.reduce((s, x) => s + x.overdue, 0), CalendarX, "rose"],
+        ].map(([label, value, icon, hue]) => <StatCard key={label} label={label} value={value} icon={icon} hue={hue} />)}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+      <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
         {total === 0 && <p className="p-8 text-center text-sm text-gray-400">No projects in this portfolio{p.can_edit ? " — use Edit to add some." : "."}</p>}
         {p.projects.map((x) => <ProjectRow key={x.id} p={x} range={range} />)}
       </div>

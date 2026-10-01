@@ -9,6 +9,7 @@ import VerifyEmailBanner from "./components/VerifyEmailBanner";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import { startLive } from "./utils/live";
 import Chatbot from "./components/ChatBot";
+import BrandMark from "./components/ui/BrandMark";
 
 // Pages that need a login and show the sidebar
 const AUTH_ROUTES = [
@@ -89,7 +90,7 @@ const Layout = ({ children }) => {
             >
               <Menu size={20} />
             </button>
-            <span className="font-semibold text-gray-900 text-sm">Task Flow</span>
+            <BrandMark size={24} />
           </div>
           <VerifyEmailBanner />
           <main className="flex-1 overflow-auto">{children}</main>

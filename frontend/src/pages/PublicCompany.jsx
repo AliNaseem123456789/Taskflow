@@ -26,7 +26,7 @@ function ApplyBox({ job }) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 text-sm text-gray-700 flex flex-wrap items-center gap-3">
         <span className="flex-1">Log in or create a free account to apply. Your public profile is what the hiring team sees.</span>
-        <Link to="/login" state={{ from: location.pathname }} className="px-4 py-2 bg-gray-900 text-white rounded-md">Log in to apply</Link>
+        <Link to="/login" state={{ from: location.pathname }} className="px-4 py-2 btn-accent rounded-md">Log in to apply</Link>
       </div>
     );
   if (me === undefined) return null;
@@ -41,7 +41,7 @@ function ApplyBox({ job }) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-5 text-sm text-gray-700 flex flex-wrap items-center gap-3">
         <span className="flex-1">Turn on your public profile to apply — the hiring team sees your headline, skills and showcase, never your email.</span>
-        <Link to="/profile/public" className="px-4 py-2 bg-gray-900 text-white rounded-md">Set up my profile</Link>
+        <Link to="/profile/public" className="px-4 py-2 btn-accent rounded-md">Set up my profile</Link>
       </div>
     );
   return (
@@ -56,10 +56,10 @@ function ApplyBox({ job }) {
       }
     }}>
       <p className="text-sm font-semibold text-gray-900">Apply as {me.name || me.profile.handle}</p>
-      <textarea rows={4} className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400" placeholder="Why you're a good fit (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Application note" />
+      <textarea rows={4} className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15" placeholder="Why you're a good fit (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Application note" />
       <p className="text-xs text-gray-400">They'll see your public profile (<Link to={`/u/${me.profile.handle}`} className="underline">@{me.profile.handle}</Link>) and this note.</p>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md">Send application</button>
+      <button className="px-4 py-2 btn-accent text-sm rounded-md">Send application</button>
     </form>
   );
 }
@@ -75,7 +75,7 @@ function JobView({ slug, jobId }) {
       <Link to={`/c/${slug}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> {j.company.name}</Link>
       <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
         <p className="text-sm text-gray-500">{j.company.name}</p>
-        <h1 className="text-2xl font-semibold text-gray-900 mt-1">{j.title}</h1>
+        <h1 className="font-display text-[28px] leading-none font-bold text-gray-900 mt-1.5">{j.title}</h1>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
           <span>{[j.team?.name, KIND[j.kind], j.level].filter(Boolean).join(" · ")}</span>
           {j.location && <span className="flex items-center gap-1"><MapPin size={14} /> {j.location}</span>}
@@ -99,9 +99,9 @@ function CompanyView({ slug }) {
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
         <div className="flex items-start gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-2xl font-semibold shrink-0">{c.name[0].toUpperCase()}</div>
+          <div className="w-16 h-16 rounded-2xl btn-accent flex items-center justify-center text-2xl font-semibold shrink-0">{c.name[0].toUpperCase()}</div>
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-gray-900">{c.name}</h1>
+            <h1 className="font-display text-[28px] leading-none font-bold text-gray-900">{c.name}</h1>
             {c.tagline && <p className="text-base text-gray-700 mt-1">{c.tagline}</p>}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
               <span className="font-medium text-gray-700">{c.work_type_label}</span>

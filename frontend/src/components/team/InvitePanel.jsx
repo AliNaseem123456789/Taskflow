@@ -36,8 +36,8 @@ export default function InvitePanel({ teamId }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
-      <h2 className="text-sm font-semibold text-gray-900">Invite by email</h2>
+    <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+      <h2 className="font-display text-[17px] font-bold text-gray-900">Invite by email</h2>
       <p className="text-xs text-gray-500 mt-0.5 mb-3">They get a link that works for 7 days.</p>
       <form onSubmit={invite} className="flex gap-2">
         <input
@@ -46,9 +46,9 @@ export default function InvitePanel({ teamId }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="name@company.com"
-          className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white"
+          className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white"
         />
-        <button disabled={sending} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">
+        <button disabled={sending} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md disabled:opacity-50">
           <Send size={13} /> {sending ? "Sending…" : "Invite"}
         </button>
       </form>

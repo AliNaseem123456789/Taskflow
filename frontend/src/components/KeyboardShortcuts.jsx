@@ -76,9 +76,9 @@ export default function KeyboardShortcuts() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setShowHelp(false)}>
-      <div className="bg-white border border-gray-200 rounded-lg shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Keyboard shortcuts</h2>
+          <h2 className="font-display text-[17px] font-bold text-gray-900">Keyboard shortcuts</h2>
           <button onClick={() => setShowHelp(false)} className="p-1 rounded hover:bg-gray-100 text-gray-400">
             <X size={16} />
           </button>

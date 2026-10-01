@@ -4,7 +4,7 @@ import { apiRequest } from "../utils/api";
 import { getStoredUser } from "../api/api";
 import { localDate } from "../utils/date";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const STATUS_STYLE = {
   pending: "bg-amber-50 text-amber-700",
   approved: "bg-blue-50 text-blue-700",
@@ -63,7 +63,7 @@ export default function CompanyMoves({ company }) {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <form onSubmit={submit} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
+      <form onSubmit={submit} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-semibold text-gray-900">{approver ? "Move someone to another team" : "Ask to move to another team"}</h3>
         <div className="flex flex-wrap gap-2 items-center">
           {approver ? (
@@ -107,7 +107,7 @@ export default function CompanyMoves({ company }) {
         </div>
         <input className={`${inputCls} w-full`} placeholder="Note (optional), e.g. why or what to hand over" value={form.note} onChange={(e) => set({ note: e.target.value })} />
         <div className="flex items-center gap-3">
-          <button className="px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">{approver ? "Move" : "Ask"}</button>
+          <button className="px-3 py-2 btn-accent text-sm rounded-md">{approver ? "Move" : "Ask"}</button>
           {msg && <span className="text-xs text-emerald-600">{msg}</span>}
           {error && <span className="text-xs text-red-600">{error}</span>}
         </div>
@@ -116,7 +116,7 @@ export default function CompanyMoves({ company }) {
 
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-2">{approver ? "Moves" : "Your moves"}</h3>
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {moves.length === 0 && <p className="p-4 text-sm text-gray-400">No moves yet.</p>}
           {moves.map((t) => (
             <div key={t.id} className="px-4 py-3 flex flex-wrap items-center gap-3">
@@ -135,7 +135,7 @@ export default function CompanyMoves({ company }) {
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[t.status]}`}>{t.status}</span>
               {t.can_decide && (
                 <>
-                  <button className="px-2.5 py-1 bg-gray-900 text-white text-xs rounded-md"
+                  <button className="px-2.5 py-1 btn-accent text-xs rounded-md"
                     onClick={() => run(() => apiRequest(`/companies/${company.id}/transfers/${t.id}/decide`, "POST", { decision: "approve" }))}>Approve</button>
                   <button className="px-2.5 py-1 border border-gray-200 text-xs rounded-md hover:bg-gray-50"
                     onClick={() => run(() => apiRequest(`/companies/${company.id}/transfers/${t.id}/decide`, "POST", { decision: "reject" }))}>Decline</button>

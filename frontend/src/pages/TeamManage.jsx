@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Copy, Check, RefreshCw, Trash2, LogOut, Shield, User, BarChart3,
-  ArrowLeft, Mail, ChevronDown
-} from "lucide-react";
+import { Copy, Check, RefreshCw, Trash2, LogOut, Shield, User, ArrowLeft, Mail } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { localMonth } from "../utils/date";
 import InvitePanel from "../components/team/InvitePanel";
@@ -48,7 +45,7 @@ function StatRow({ stat }) {
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full mt-1.5 overflow-hidden">
             <div
-              className="h-full bg-gray-900 rounded-full"
+              className="h-full btn-accent rounded-full"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -161,14 +158,14 @@ export default function TeamManage() {
       </button>
 
       {/* Team header */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">{team.name}</h1>
             <p className="text-xs text-gray-400 mt-0.5">{team.members.length} members</p>
           </div>
           {isOwner && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 border border-gray-200 px-2 py-0.5 rounded">
+            <span className="text-[11px] font-semibold text-gray-500 border border-gray-200 px-2 py-0.5 rounded">
               Owner
             </span>
           )}
@@ -176,7 +173,7 @@ export default function TeamManage() {
 
         {/* Invite code */}
         <div className="mt-4 bg-gray-50 border border-gray-200 rounded-md p-3">
-          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5">
+          <p className="text-[11px] text-gray-400 font-semibold mb-1.5">
             Invite code
           </p>
           <div className="flex items-center justify-between">
@@ -225,7 +222,7 @@ export default function TeamManage() {
             onClick={() => setTab(t)}
             className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors ${
               tab === t
-                ? "border-b-2 border-gray-900 text-gray-900"
+                ? "border-b-2 border-indigo-600 text-gray-900"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -236,7 +233,7 @@ export default function TeamManage() {
 
       {/* Members tab */}
       {tab === "members" && (
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
           {team.members.map((member) => (
             <div key={member.id} className="px-4 py-3 flex items-center gap-3">
               {/* Avatar */}
@@ -301,7 +298,7 @@ export default function TeamManage() {
             />
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg px-4 py-2">
+          <div className="bg-white border border-gray-200 rounded-xl px-4 py-2">
             {stats.map((s) => <StatRow key={s.id} stat={s} />)}
           </div>
         </div>

@@ -5,8 +5,9 @@ import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useWorkspace } from "../utils/workspace";
 import { useLiveEvent } from "../utils/live";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
 
 // Who has read one announcement (author / admin)
@@ -74,11 +75,11 @@ export default function Announcements() {
     <div className="p-6 lg:p-8 max-w-3xl">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Announcements</h1>
+          <h1 className="page-title"><AreaTile />Announcements</h1>
           <p className="text-sm text-gray-500 mt-1">News for {current?.name || "the company"}.</p>
         </div>
         {current?.role !== "guest" && current?.role !== "viewer" && !composing && (
-          <button onClick={() => setComposing(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button onClick={() => setComposing(true)} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md">
             <Megaphone size={14} /> New announcement
           </button>
         )}
@@ -87,7 +88,7 @@ export default function Announcements() {
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
       {composing && (
-        <form onSubmit={post} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3 mb-5">
+        <form onSubmit={post} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 mb-5">
           <input required autoFocus className={`${inputCls} w-full`} placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <textarea rows={4} className={`${inputCls} w-full`} placeholder="What do people need to know?" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           <div className="flex flex-wrap gap-2 items-center">
@@ -116,7 +117,7 @@ export default function Announcements() {
           </div>
           <p className="text-xs text-gray-400">Admins post to anyone; managers to their department; team leads to their team.</p>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Post</button>
+            <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Post</button>
             <button type="button" onClick={() => setComposing(false)} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
           </div>
         </form>
@@ -124,20 +125,20 @@ export default function Announcements() {
 
       {list === null && <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />}
       {list?.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400">
           <Megaphone size={26} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm">No announcements yet.</p>
         </div>
       )}
       <div className="space-y-3">
         {list?.map((a) => (
-          <article key={a.id} className={`bg-white border rounded-lg p-4 ${a.read ? "border-gray-200" : "border-gray-900"}`}>
+          <article key={a.id} className={`bg-white border rounded-lg p-4 ${a.read ? "border-gray-200" : "border-indigo-600"}`}>
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
-                <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+                <h2 className="font-display text-[17px] font-bold text-gray-900 flex items-center gap-1.5">
                   {a.pinned && <Pin size={12} className="text-gray-500" />}
                   {a.title}
-                  {!a.read && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-900 text-white">new</span>}
+                  {!a.read && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded btn-accent ">new</span>}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {who(a.author) || "Someone"} · {new Date(a.created_at).toLocaleString()} ·{" "}

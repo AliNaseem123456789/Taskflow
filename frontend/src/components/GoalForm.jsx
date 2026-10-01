@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const inputCls =
-  "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+  "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // Create / edit a goal. onSubmit(fields) should throw on error.
 export default function GoalForm({ initial, tags = [], onSubmit, onCancel, submitLabel = "Add goal" }) {
@@ -45,7 +45,7 @@ export default function GoalForm({ initial, tags = [], onSubmit, onCancel, submi
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={saving}
-          className="px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50">
+          className="px-3 py-1.5 btn-accent text-sm font-medium rounded-md disabled:opacity-50">
           {submitLabel}
         </button>
         {onCancel && (

@@ -1,10 +1,11 @@
 import { createElement, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Building2, Compass, MapPin, Search, Sparkles, UserCircle } from "lucide-react";
+import { Building2, MapPin, Search, Sparkles, UserCircle } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { GENRE_LABELS } from "../utils/publicApi";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const opts = { personal: true };
 const STAGE = {
   applied: ["Applied", "bg-gray-100 text-gray-700"], reviewing: ["Reviewing", "bg-sky-50 text-sky-700"], interview: ["Interview", "bg-violet-50 text-violet-700"],
@@ -36,16 +37,16 @@ function People() {
       <div className="flex flex-wrap gap-1.5">
         {["", ...Object.keys(GENRE_LABELS)].map((g) => (
           <button key={g || "all"} onClick={() => setF({ ...f, genre: g })}
-            className={`text-xs px-2.5 py-1 rounded-full border ${f.genre === g ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>{g ? GENRE_LABELS[g] : "All kinds of work"}</button>
+            className={`text-xs px-2.5 py-1 rounded-full border ${f.genre === g ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>{g ? GENRE_LABELS[g] : "All kinds of work"}</button>
         ))}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {res?.people.length === 0 && <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-400">Nobody matches yet.</div>}
+      {res?.people.length === 0 && <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Nobody matches yet.</div>}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {res?.people.map((p) => (
           <Link key={p.handle} to={`/u/${p.handle}`} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-400 flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-semibold shrink-0">{p.name[0].toUpperCase()}</div>
+              <div className="w-10 h-10 rounded-xl btn-accent flex items-center justify-center font-semibold shrink-0">{p.name[0].toUpperCase()}</div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
                 <p className="text-xs text-gray-500 truncate">{p.headline || `@${p.handle}`}</p>
@@ -87,11 +88,11 @@ function Companies() {
           {res?.work_types.map((w) => <option key={w.key} value={w.key}>{w.label}</option>)}
         </select>
       </div>
-      {res?.companies.length === 0 && <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-400">No public company pages match.</div>}
+      {res?.companies.length === 0 && <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">No public company pages match.</div>}
       <div className="grid sm:grid-cols-2 gap-3">
         {res?.companies.map((c) => (
           <Link key={c.slug} to={`/c/${c.slug}`} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-400 flex gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gray-900 text-white flex items-center justify-center font-semibold shrink-0">{c.name[0].toUpperCase()}</div>
+            <div className="w-11 h-11 rounded-xl btn-accent flex items-center justify-center font-semibold shrink-0">{c.name[0].toUpperCase()}</div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-900">{c.name}</p>
               {c.tagline && <p className="text-xs text-gray-600 line-clamp-2">{c.tagline}</p>}
@@ -113,7 +114,7 @@ function Applications() {
   const load = () => apiRequest("/profiles/applications", "GET", null, opts).then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
   return (
-    <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+    <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
       {rows?.length === 0 && <p className="p-8 text-center text-sm text-gray-400">You haven't applied to any roles.</p>}
       {rows?.map((a) => {
         const [label, cls] = STAGE[a.status];
@@ -144,14 +145,14 @@ export default function Discover() {
     <div className="p-6 lg:p-8 max-w-6xl space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><Compass size={20} /> Discover</h1>
+          <h1 className="page-title"><AreaTile /> Discover</h1>
           <p className="text-sm text-gray-500 mt-1">Find people and companies by the kind of work they do. Only profiles and pages their owners made public show here.</p>
         </div>
         <Link to="/profile/public" className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-sm rounded-md hover:bg-gray-50 shrink-0"><UserCircle size={14} /> My public profile</Link>
       </div>
       <div className="flex gap-6 border-b border-gray-200">
         {tabs.map(([k, l, icon]) => (
-          <button key={k} onClick={() => setParams({ tab: k })} className={`flex items-center gap-1.5 pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-900"}`}>
+          <button key={k} onClick={() => setParams({ tab: k })} className={`flex items-center gap-1.5 pb-2 text-sm -mb-px border-b-2 ${tab === k ? "border-indigo-600 text-indigo-700 font-semibold" : "border-transparent text-gray-500 hover:text-gray-900"}`}>
             {createElement(icon, { size: 14 })} {l}
           </button>
         ))}

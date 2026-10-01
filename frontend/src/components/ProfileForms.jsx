@@ -3,8 +3,8 @@ import { Loader2 } from "lucide-react";
 import api, { setStoredUser, browserTimezone } from "../api/api";
 
 const inputCls =
-  "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
-const labelCls = "text-xs font-medium text-gray-500 uppercase tracking-wide";
+  "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
+const labelCls = "text-[13px] font-medium text-gray-600";
 
 // Every timezone the browser knows, e.g. "Asia/Karachi"
 const TIMEZONES =
@@ -56,7 +56,7 @@ export function EditProfileForm({ user, onSaved, onCancel }) {
         <button
           type="submit"
           disabled={saving}
-          className="px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
+          className="px-3 py-1.5 btn-accent text-sm font-medium rounded-md disabled:opacity-50 flex items-center gap-2"
         >
           {saving && <Loader2 size={14} className="animate-spin" />}
           Save
@@ -101,9 +101,9 @@ export function ChangePasswordForm({ onChanged }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg mb-6">
+    <div className="bg-white border border-gray-200 rounded-xl mb-6">
       <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-semibold text-gray-900">Password</h2>
+        <h2 className="font-display text-[17px] font-bold text-gray-900">Password</h2>
         <p className="text-xs text-gray-500 mt-0.5">Changing it logs out your other devices</p>
       </div>
       <form onSubmit={handleSubmit} className="p-5 space-y-3 max-w-sm">
@@ -118,7 +118,7 @@ export function ChangePasswordForm({ onChanged }) {
         <button
           type="submit"
           disabled={saving}
-          className="px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
+          className="px-3 py-1.5 btn-accent text-sm font-medium rounded-md disabled:opacity-50 flex items-center gap-2"
         >
           {saving && <Loader2 size={14} className="animate-spin" />}
           Change password

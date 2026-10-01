@@ -40,7 +40,7 @@ function ProjectPeople({ team, project }) {
   if (!isAdmin && people.length === 0) return null;
   const roleOf = (id) => members.find((m) => m.id === id)?.role;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
       <p className="text-xs font-medium text-gray-500 mb-2">Also on this project <span className="text-gray-400 font-normal">(besides the {team.name} team)</span></p>
       {people.length === 0 && <p className="text-xs text-gray-400 mb-2">Nobody extra yet. Add someone from another team, or invite a guest from Company → Invites.</p>}
       <div className="flex flex-wrap gap-2 mb-2">
@@ -106,19 +106,19 @@ function ProjectTasks({ team, project, onBack }) {
       <div className="flex gap-1 mb-3">
         {[["board", "Board"], ["timeline", "Timeline"], ["list", "List"]].map(([k, label]) => (
           <button key={k} onClick={() => setView(k)}
-            className={`px-3 py-1 text-xs rounded-md ${view === k ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+            className={`px-3 py-1 text-xs rounded-md ${view === k ? "btn-accent " : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
             {label}
           </button>
         ))}
         {team.role === "admin" && (
-          <button onClick={() => setShowFields(!showFields)} className={`ml-auto px-3 py-1 text-xs rounded-md border ${showFields ? "border-gray-900 text-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+          <button onClick={() => setShowFields(!showFields)} className={`ml-auto px-3 py-1 text-xs rounded-md border ${showFields ? "border-indigo-600 text-gray-900" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
             Fields{fields.length ? ` (${fields.length})` : ""}
           </button>
         )}
       </div>
       {showFields && <ProjectFields team={team} project={project} onClose={() => setShowFields(false)} onChanged={() => { loadFields(); load(); }} />}
       {view === "board" ? <ProjectBoard team={team} project={project} /> : view === "timeline" ? <ProjectTimeline team={team} project={project} /> : (
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+      <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
         {tasks === null && <p className="p-4 text-sm text-gray-400">Loading…</p>}
         {tasks?.length === 0 && <p className="p-8 text-center text-sm text-gray-400">No tasks yet. Pick this project when adding or editing a task.</p>}
         {tasks?.map((t) => (
@@ -198,7 +198,7 @@ export default function ProjectsTab({ team }) {
       {isAdmin && (
         <div className="mb-4">
           {adding ? (
-            <form onSubmit={create} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+            <form onSubmit={create} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
               <input autoFocus required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Project name" className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none bg-white" />
               <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -206,13 +206,13 @@ export default function ProjectsTab({ team }) {
               <div className="flex gap-2">
                 {COLORS.map((c) => (
                   <button key={c} type="button" onClick={() => setForm({ ...form, color: c })}
-                    className={`w-6 h-6 rounded-full ${form.color === c ? "ring-2 ring-offset-2 ring-gray-900" : ""}`}
+                    className={`w-6 h-6 rounded-full ${form.color === c ? "ring-2 ring-offset-2 ring-indigo-500" : ""}`}
                     style={{ backgroundColor: c }} aria-label={c} />
                 ))}
               </div>
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex gap-2">
-                <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Create project</button>
+                <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Create project</button>
                 <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
               </div>
             </form>
@@ -226,7 +226,7 @@ export default function ProjectsTab({ team }) {
 
       {projects === null && <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />}
       {projects?.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400">
           <FolderKanban size={28} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm">No projects yet{isAdmin ? "" : " — an admin can create one"}.</p>
         </div>
@@ -235,7 +235,7 @@ export default function ProjectsTab({ team }) {
         {projects?.map((p) => {
           const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
           return (
-            <div key={p.id} className={`bg-white border border-gray-200 rounded-lg p-4 group ${p.archived ? "opacity-60" : ""}`}>
+            <div key={p.id} className={`bg-white border border-gray-200 rounded-xl p-4 group ${p.archived ? "opacity-60" : ""}`}>
               <div className="flex items-start justify-between gap-2">
                 <button onClick={() => setOpen(p)} className="flex items-center gap-2 text-left min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />

@@ -8,6 +8,7 @@ import TaskList from "../components/TaskList";
 import { apiRequest } from "../utils/api";
 import { localDate } from "../utils/date";
 import { getWorkspace, getStoredUser } from "../api/api";
+import AreaTile from "../components/AreaTile";
 
 export default function MyDones() {
   const [tasks, setTasks] = useState([]);
@@ -111,7 +112,7 @@ export default function MyDones() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-gray-900">
+          <h1 className="page-title"><AreaTile />
             {currentDateObj.toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
@@ -139,7 +140,7 @@ export default function MyDones() {
           <ExportMenu onExport={handleExport} />
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium btn-accent rounded-md transition-colors"
           >
             <Plus size={13} />
             Add task
@@ -155,7 +156,7 @@ export default function MyDones() {
             onClick={() => setStatusFilter(f)}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
               statusFilter === f
-                ? "bg-gray-900 text-white"
+                ? "btn-accent "
                 : "text-gray-500 hover:bg-gray-100"
             }`}
           >
@@ -173,7 +174,7 @@ export default function MyDones() {
       )}
 
       {/* Task list */}
-      <div className="bg-white border border-gray-200 rounded-lg p-2">
+      <div className="bg-white border border-gray-200 rounded-xl p-2">
         <TaskList
           tasks={filteredTasks}
           onStatusChange={handleStatusChange}

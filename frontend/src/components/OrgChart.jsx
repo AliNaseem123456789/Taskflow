@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { ROLE_LABELS } from "../utils/workspace";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const initial = (p) => (p.name || p.email || "?")[0].toUpperCase();
 
 // One person and everyone who reports to them (collapsible)
@@ -86,14 +86,14 @@ export default function OrgChart({ company }) {
       <div className="flex gap-1 mb-4">
         {[["chart", "Reporting lines"], ["directory", "Directory"]].map(([k, label]) => (
           <button key={k} onClick={() => setView(k)}
-            className={`px-3 py-1.5 text-xs rounded-md ${view === k ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+            className={`px-3 py-1.5 text-xs rounded-md ${view === k ? "btn-accent " : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
             {label}
           </button>
         ))}
       </div>
 
       {view === "chart" && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           {org.people.every((p) => !p.manager_id) && (
             <p className="text-xs text-gray-400 mb-2">Nobody has a manager set yet. Set "Reports to" in People to build the chart.</p>
           )}
@@ -118,7 +118,7 @@ export default function OrgChart({ company }) {
             <div className="flex flex-wrap gap-1 mb-3">
               {skills.map((s) => (
                 <button key={s} onClick={() => setSkill(skill === s ? "" : s)}
-                  className={`text-xs px-2 py-0.5 rounded-full border ${skill === s ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>
+                  className={`text-xs px-2 py-0.5 rounded-full border ${skill === s ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>
                   {s}
                 </button>
               ))}
@@ -126,7 +126,7 @@ export default function OrgChart({ company }) {
           )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {found.map((p) => (
-              <div key={p.id} className="bg-white border border-gray-200 rounded-lg p-4">
+              <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600">{initial(p)}</div>
                   <div className="min-w-0">

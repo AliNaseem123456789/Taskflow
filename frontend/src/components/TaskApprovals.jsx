@@ -5,7 +5,7 @@ import { apiRequest } from "../utils/api";
 import { getStoredUser } from "../api/api";
 import { useMembersOf } from "../utils/fields";
 
-const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const APPROVAL_STATUS = {
   pending: { label: "Waiting", chip: "bg-amber-50 text-amber-700" },
   approved: { label: "Approved", chip: "bg-emerald-50 text-emerald-700" },
@@ -48,7 +48,7 @@ export function ApprovalRow({ a, opts, onChange, showTask }) {
             <button onClick={() => decide("reject")} className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-xs rounded-md hover:bg-rose-700"><X size={12} /> Reject</button>
           </div>
         ) : (
-          <button onClick={() => setDeciding(true)} className="text-xs px-3 py-1.5 bg-gray-900 text-white rounded-md">Review and decide</button>
+          <button onClick={() => setDeciding(true)} className="text-xs px-3 py-1.5 btn-accent rounded-md">Review and decide</button>
         )
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -88,10 +88,10 @@ export default function TaskApprovals({ task, opts }) {
   const pending = data.approvals.filter((a) => a.status === "pending").length;
   const approved = data.approvals.filter((a) => a.status === "approved").length;
   return (
-    <section className="bg-white border border-gray-200 rounded-lg p-4">
+    <section className="bg-white border border-gray-200 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-1">
         <BadgeCheck size={14} className="text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-900 flex-1">
+        <h2 className="font-display text-[17px] font-bold text-gray-900 flex-1">
           Approvals {data.approvals.length > 0 && <span className="font-normal text-gray-500">· {approved} approved{pending ? `, ${pending} waiting` : ""}</span>}
         </h2>
         {data.can_request && !asking && <button onClick={() => setAsking(true)} className="text-xs px-2.5 py-1 border border-gray-200 rounded-md hover:bg-gray-50">Ask for approval</button>}
@@ -102,14 +102,14 @@ export default function TaskApprovals({ task, opts }) {
           <div className="flex flex-wrap gap-1.5">
             {people.list.filter((m) => m.id !== me && m.role !== "viewer").map((m) => (
               <button type="button" key={m.id} onClick={() => setPick(pick.includes(m.id) ? pick.filter((x) => x !== m.id) : [...pick, m.id])}
-                className={`text-xs px-2.5 py-1 rounded-full border ${pick.includes(m.id) ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
+                className={`text-xs px-2.5 py-1 rounded-full border ${pick.includes(m.id) ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
                 {m.name || m.email}
               </button>
             ))}
           </div>
           <input className={`${inputCls} w-full`} placeholder="What should they look at? (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex gap-2">
-            <button disabled={!pick.length} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md disabled:opacity-50">Send request{pick.length > 1 ? `s (${pick.length})` : ""}</button>
+            <button disabled={!pick.length} className="px-3 py-1.5 btn-accent text-xs rounded-md disabled:opacity-50">Send request{pick.length > 1 ? `s (${pick.length})` : ""}</button>
             <button type="button" onClick={() => setAsking(false)} className="px-3 py-1.5 border border-gray-200 text-xs rounded-md">Cancel</button>
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}

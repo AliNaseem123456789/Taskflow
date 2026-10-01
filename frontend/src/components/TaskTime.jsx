@@ -5,7 +5,7 @@ import { getStoredUser } from "../api/api";
 import { localDate } from "../utils/date";
 import { fmtClock, fmtMinutes, onTimerChange, parseDuration, useTimer } from "../utils/timer";
 
-const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // Time on one task: start/stop a timer, log time by hand, and how it compares to the estimate.
 export default function TaskTime({ task, opts, canLog }) {
@@ -43,10 +43,10 @@ export default function TaskTime({ task, opts, canLog }) {
   const pct = est ? Math.round((data.total_minutes / est) * 100) : null;
 
   return (
-    <section className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+    <section className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Clock size={14} className="text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-900 flex-1">
+        <h2 className="font-display text-[17px] font-bold text-gray-900 flex-1">
           Time <span className="font-normal text-gray-500">· {fmtMinutes(data.total_minutes)} logged
             {data.total_minutes !== data.mine_minutes && data.mine_minutes > 0 && ` (${fmtMinutes(data.mine_minutes)} by you)`}</span>
         </h2>
@@ -55,7 +55,7 @@ export default function TaskTime({ task, opts, canLog }) {
             <Square size={11} className="fill-current" /> Stop · <span className="tabular-nums">{fmtClock(running.started_at, now)}</span>
           </button>
         ) : (
-          <button onClick={() => act(() => start(task.id, opts))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800">
+          <button onClick={() => act(() => start(task.id, opts))} className="flex items-center gap-1.5 px-3 py-1.5 btn-accent text-xs rounded-md">
             <Play size={11} className="fill-current" /> Start timer
           </button>
         ))}

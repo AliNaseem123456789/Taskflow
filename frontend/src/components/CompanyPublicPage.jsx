@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ExternalLink, Globe, Lock } from "lucide-react";
 import { apiRequest } from "../utils/api";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // The company's public page: off by default; admins turn it on and fill it in.
 // Public roles from the job board show on it, and anyone with a profile can apply.
@@ -40,7 +40,7 @@ export default function CompanyPublicPage({ company }) {
         </div>
         {p.is_public && <Link to={`/c/${p.slug}`} className="flex items-center gap-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-md bg-white"><ExternalLink size={12} /> View</Link>}
         {p.can_edit && (
-          <button onClick={() => save({ is_public: !p.is_public })} className={`px-3 py-1.5 text-sm rounded-md ${p.is_public ? "border border-gray-300 bg-white" : "bg-gray-900 text-white"}`}>
+          <button onClick={() => save({ is_public: !p.is_public })} className={`px-3 py-1.5 text-sm rounded-md ${p.is_public ? "border border-gray-300 bg-white" : "btn-accent "}`}>
             {p.is_public ? "Turn off" : "Turn on"}
           </button>
         )}
@@ -60,7 +60,7 @@ export default function CompanyPublicPage({ company }) {
             <input disabled={!p.can_edit} className={`${inputCls} w-full mt-1`} placeholder="City or Remote" value={p.location || ""} onChange={set("location")} />
           </label>
         </div>
-        {p.can_edit && <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md">Save</button>}
+        {p.can_edit && <button className="px-4 py-2 btn-accent text-sm rounded-md">Save</button>}
         {msg && <span className="text-sm text-emerald-700 ml-3">{msg}</span>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>

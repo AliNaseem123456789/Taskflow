@@ -66,11 +66,11 @@ export default function Footer() {
             <input
               type="email"
               placeholder="you@email.com"
-              className="w-full px-3 py-2 text-[13px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              className="w-full px-3 py-2 text-[13px] bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
             <button
               type="submit"
-              className="w-full bg-gray-900 text-white text-[13px] font-medium py-2 rounded-md hover:bg-gray-800 transition-colors"
+              className="w-full btn-accent text-[13px] font-medium py-2 rounded-md transition-colors"
             >
               Subscribe
             </button>
@@ -85,4 +85,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+}

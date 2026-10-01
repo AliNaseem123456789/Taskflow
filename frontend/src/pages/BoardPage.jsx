@@ -24,6 +24,7 @@ import TaskEditModal from "../components/TaskEditModal";
 import { apiRequest } from "../utils/api";
 import { STATUSES, STATUS_BADGE } from "../utils/taskMeta";
 import { localDate, shiftDate } from "../utils/date";
+import AreaTile from "../components/AreaTile";
 
 const DONE_DAYS = 7; // Done column shows the last week
 
@@ -200,7 +201,7 @@ export default function BoardPage() {
   return (
     <div className="p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Board</h1>
+        <h1 className="page-title"><AreaTile />Board</h1>
         <p className="text-sm text-gray-500 mt-1">
           Drag tasks between columns to change their status. Done shows the last {DONE_DAYS} days.
         </p>
@@ -213,9 +214,9 @@ export default function BoardPage() {
             value={newTitle.title}
             onChange={(e) => setNewTitle((n) => ({ ...n, title: e.target.value }))}
             placeholder={`New "${newTitle.status}" task`}
-            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white"
+            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white"
           />
-          <button className="px-3 py-2 bg-gray-900 text-white text-sm rounded-md">Add</button>
+          <button className="px-3 py-2 btn-accent text-sm rounded-md">Add</button>
           <button type="button" onClick={() => setNewTitle({ status: null, title: "" })} className="px-2 text-sm text-gray-500">
             Cancel
           </button>

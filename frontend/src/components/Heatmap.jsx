@@ -45,7 +45,7 @@ export default function Heatmap() {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
+    <div className="bg-white border border-gray-200 rounded-xl p-5 mb-8">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-gray-700">Activity</span>
         <span className="text-xs text-gray-400">{total} tasks done in the last year</span>

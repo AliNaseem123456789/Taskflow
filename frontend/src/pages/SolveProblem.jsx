@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Check, Lightbulb, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { aiRequest, useAI } from "../utils/ai";
 import { getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
 import { useMyProjects } from "../utils/projects";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const EXAMPLES = [
   "Releases keep slipping and nobody knows why",
   "One person seems to be doing everything",
@@ -83,13 +84,13 @@ export default function SolveProblem() {
   return (
     <div className="p-6 lg:p-8 max-w-4xl space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><Lightbulb size={20} /> Solve a problem</h1>
+        <h1 className="page-title"><AreaTile /> Solve a problem</h1>
         <p className="text-sm text-gray-500 mt-1">
           Describe what's not working. The AI looks at the work you can see {companyId ? "— workload, overdue and blocked tasks, project health, time off —" : "(your own tasks)"} and suggests what to change.
         </p>
       </div>
 
-      <form onSubmit={solve} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <form onSubmit={solve} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
         <textarea required minLength={5} rows={3} className={`${inputCls} w-full`} value={problem} onChange={(e) => setProblem(e.target.value)}
           placeholder="e.g. Our releases keep slipping, and the last two sprints ended with half the work unfinished." />
         <div className="flex flex-wrap gap-1.5">
@@ -109,7 +110,7 @@ export default function SolveProblem() {
             </select>
           </div>
         )}
-        <button disabled={busy || problem.trim().length < 5} className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">
+        <button disabled={busy || problem.trim().length < 5} className="flex items-center gap-1.5 px-4 py-2 btn-accent text-sm rounded-md disabled:opacity-50">
           <Sparkles size={14} /> {busy ? "Looking at your work…" : "Find a way forward"}
         </button>
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -117,7 +118,7 @@ export default function SolveProblem() {
 
       {result && (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
             <p className="text-xs font-medium text-gray-500 mb-1">What's likely going on</p>
             <p className="text-sm text-gray-900 leading-relaxed">{result.diagnosis}</p>
             {result.causes.length > 0 && (
@@ -133,12 +134,12 @@ export default function SolveProblem() {
             </p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
             <p className="text-xs font-medium text-gray-500 mb-2">Plan</p>
             <ol className="space-y-2">
               {result.plan.map((p, i) => (
                 <li key={i} className="flex gap-3 text-sm">
-                  <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[11px] flex items-center justify-center shrink-0">{i + 1}</span>
+                  <span className="w-5 h-5 rounded-full btn-accent text-[11px] flex items-center justify-center shrink-0">{i + 1}</span>
                   <span><span className="text-gray-900">{p.step}</span> <span className="text-gray-500">— {p.why}</span></span>
                 </li>
               ))}
@@ -146,7 +147,7 @@ export default function SolveProblem() {
           </div>
 
           {result.tasks.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-2">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
               <p className="text-xs font-medium text-gray-500">Tasks to start with</p>
               {result.tasks.map((t, i) => (
                 <label key={i} className="flex items-start gap-2 text-sm text-gray-800">
@@ -159,7 +160,7 @@ export default function SolveProblem() {
                 </label>
               ))}
               <div className="flex flex-wrap gap-2 pt-1">
-                <button onClick={createTasks} className="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md"><Check size={12} /> Create selected tasks</button>
+                <button onClick={createTasks} className="flex items-center gap-1 px-3 py-1.5 btn-accent text-xs rounded-md"><Check size={12} /> Create selected tasks</button>
                 {companyId && <button onClick={saveToWiki} className="px-3 py-1.5 border border-gray-200 text-xs rounded-md hover:bg-gray-50">Save the plan to the wiki</button>}
                 {msg && <span className="text-xs text-emerald-700 self-center">{msg}</span>}
               </div>
@@ -169,13 +170,13 @@ export default function SolveProblem() {
           {(result.questions.length > 0 || result.watch.length > 0) && (
             <div className="grid sm:grid-cols-2 gap-4">
               {result.questions.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-white border border-gray-200 rounded-xl p-4">
                   <p className="text-xs font-medium text-gray-500 mb-1">Ask the team</p>
                   <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">{result.questions.map((q, i) => <li key={i}>{q}</li>)}</ul>
                 </div>
               )}
               {result.watch.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-white border border-gray-200 rounded-xl p-4">
                   <p className="text-xs font-medium text-gray-500 mb-1">How you'll know it's working</p>
                   <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">{result.watch.map((w, i) => <li key={i}>{w}</li>)}</ul>
                 </div>

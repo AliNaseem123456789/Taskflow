@@ -12,6 +12,7 @@ import CompanyInvites from "../components/CompanyInvites";
 import OnboardingChecklists from "../components/OnboardingChecklists";
 import CompanyMoves from "../components/CompanyMoves";
 import AiUsage from "../components/AiUsage";
+import AreaTile from "../components/AreaTile";
 
 // AI hand-over note: where each open task stands, the next step, and who could take it
 function HandOverNote({ company, person, onApplied }) {
@@ -59,7 +60,7 @@ function HandOverNote({ company, person, onApplied }) {
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => navigator.clipboard?.writeText(text)} className="text-xs px-2.5 py-1 border border-gray-200 rounded-md bg-white">Copy note</button>
         {note.tasks.some((t) => t.suggested_owner_id) && (
-          <button type="button" onClick={apply} className="text-xs px-2.5 py-1 bg-gray-900 text-white rounded-md">Give tasks to the suggested people</button>
+          <button type="button" onClick={apply} className="text-xs px-2.5 py-1 btn-accent rounded-md">Give tasks to the suggested people</button>
         )}
       </div>
       {state && <p className="text-xs text-gray-500">{state}</p>}
@@ -129,7 +130,7 @@ function HandOver({ company, person, members, onDone, onCancel }) {
   );
 }
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const ROLES = ["admin", "manager", "member", "guest", "viewer"];
 const ROLE_HELP = {
   owner: "Everything, including deleting the company",
@@ -164,7 +165,7 @@ function General({ company, types, onSaved }) {
   };
 
   return (
-    <form onSubmit={save} className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 max-w-xl">
+    <form onSubmit={save} className="bg-white border border-gray-200 rounded-xl p-5 space-y-4 max-w-xl">
       <fieldset disabled={!canEdit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
@@ -192,7 +193,7 @@ function General({ company, types, onSaved }) {
       </fieldset>
       {canEdit ? (
         <div className="flex items-center gap-3">
-          <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Save</button>
+          <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Save</button>
           {msg && <span className="text-xs text-gray-500">{msg}</span>}
         </div>
       ) : (
@@ -271,7 +272,7 @@ function Members({ company }) {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+      <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
         {shown.map((m) => {
           const isOwner = m.role === "owner";
           const left = m.status === "left";
@@ -422,7 +423,7 @@ function Audit({ company }) {
         {kinds.map((k) => <option key={k} value={k}>{k.replace("_", " ")}</option>)}
       </select>
     )}
-    <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+    <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
       {shown.length === 0 && <p className="p-6 text-sm text-gray-400 text-center">Nothing recorded yet.</p>}
       {shown.map((r) => (
         <div key={r.id} className="px-4 py-2.5 flex items-start justify-between gap-4 text-sm">
@@ -471,7 +472,7 @@ function Danger({ company }) {
     <div className="space-y-4 max-w-xl">
       {msg && <p className="text-sm text-red-600">{msg}</p>}
       {isOwner && (
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold text-gray-900">Hand over ownership</h3>
           <p className="text-xs text-gray-500 mt-0.5 mb-3">You become an admin. Needed before the owner can leave.</p>
           <div className="flex gap-2">
@@ -491,7 +492,7 @@ function Danger({ company }) {
       )}
 
       {!isOwner && (
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h3 className="text-sm font-semibold text-gray-900">Leave {company.name}</h3>
           <p className="text-xs text-gray-500 mt-0.5 mb-3">Your tasks stay in the company under your name, marked as a former member.</p>
           {leaving ? (
@@ -559,7 +560,7 @@ export default function CompanyPage() {
   return (
     <div className="p-6 lg:p-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">{company.name}</h1>
+        <h1 className="page-title"><AreaTile />{company.name}</h1>
         <p className="text-sm text-gray-500 mt-1">
           {company.member_count} {company.member_count === 1 ? "person" : "people"} · {company.team_count}{" "}
           {company.team_count === 1 ? "team" : "teams"} · you are {ROLE_LABELS[company.my_role]}
@@ -569,7 +570,7 @@ export default function CompanyPage() {
       <div className="flex gap-1 border-b border-gray-200 mb-5 overflow-x-auto">
         {tabs.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`px-3 py-2 text-sm -mb-px border-b-2 whitespace-nowrap ${tab === key ? "border-gray-900 text-gray-900 font-medium" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+            className={`px-3 py-2 text-sm -mb-px border-b-2 whitespace-nowrap ${tab === key ? "border-indigo-600 text-indigo-700 font-semibold" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
           </button>
         ))}

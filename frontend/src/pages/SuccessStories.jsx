@@ -7,7 +7,7 @@ export default function SuccessStories() {
     <div className="pt-14">
       {/* Header */}
       <section className="py-20 px-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           Success Stories
         </h1>
         <p className="text-lg text-gray-500 max-w-lg mx-auto">
@@ -21,7 +21,7 @@ export default function SuccessStories() {
           {caseStudies.map((cs, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+              className="bg-white border border-gray-200 rounded-xl p-6 hover:border-gray-300 transition-colors"
             >
               <div className="flex items-start gap-4">
                 {cs.logo && (
@@ -36,7 +36,7 @@ export default function SuccessStories() {
                     {cs.company}
                   </h2>
                   {cs.industry && (
-                    <span className="text-xs text-gray-400 uppercase tracking-wider">
+                    <span className="text-xs text-gray-400">
                       {cs.industry}
                     </span>
                   )}
@@ -80,7 +80,7 @@ export default function SuccessStories() {
         <p className="text-gray-500 mb-6">Join thousands of productive teams.</p>
         <Link
           to="/signup"
-          className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 btn-accent px-6 py-2.5 rounded-md text-sm font-medium transition-colors"
         >
           Start free trial
           <ArrowRight size={16} />
@@ -88,4 +88,4 @@ export default function SuccessStories() {
       </section>
     </div>
   );
-}
+}

@@ -32,7 +32,7 @@ export default function AssigneeSuggest({ getInput, onPick, company }) {
           {state.items.map((s) => (
             <button key={s.user_id} type="button" title={s.reason}
               onClick={() => { onPick(s.user_id); setState({ loading: false, items: null, error: "" }); }}
-              className="text-left text-[11px] px-2 py-1 rounded-md border border-gray-200 hover:border-gray-900 bg-white max-w-[260px]">
+              className="text-left text-[11px] px-2 py-1 rounded-md border border-gray-200 hover:border-indigo-600 bg-white max-w-[260px]">
               <span className="font-medium text-gray-900">{s.name}</span>
               <span className="text-gray-500"> — {s.reason}</span>
             </button>

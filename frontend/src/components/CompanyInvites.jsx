@@ -3,7 +3,7 @@ import { Check, Mail, Trash2, X } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { ROLE_LABELS } from "../utils/workspace";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 // Invite people by email, see who's pending, and answer "ask to join" requests.
 // Admins and managers; managers can't hand out Admin or Manager.
@@ -58,7 +58,7 @@ export default function CompanyInvites({ company }) {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <form onSubmit={send} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
+      <form onSubmit={send} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-semibold text-gray-900">Invite someone</h3>
         <div className="flex flex-wrap gap-2">
           <input type="email" required className={`${inputCls} flex-1 min-w-[220px]`} placeholder="name@example.com"
@@ -86,7 +86,7 @@ export default function CompanyInvites({ company }) {
           </select>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md">
             <Mail size={14} /> Send invite
           </button>
           {msg && <span className="text-xs text-emerald-600">{msg}</span>}
@@ -98,7 +98,7 @@ export default function CompanyInvites({ company }) {
       {requests.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-900 mb-2">Asking to join ({requests.length})</h3>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
             {requests.map((r) => {
               const d = decision[r.id] || { role: "member", team_id: "" };
               const set = (patch) => setDecision({ ...decision, [r.id]: { ...d, ...patch } });
@@ -115,7 +115,7 @@ export default function CompanyInvites({ company }) {
                     <option value="">No team</option>
                     {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <button title="Approve" className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md"
+                  <button title="Approve" className="flex items-center gap-1 px-2.5 py-1.5 btn-accent text-xs rounded-md"
                     onClick={() => run(() => apiRequest(`/companies/${company.id}/join-requests/${r.id}`, "POST", { decision: "approve", role: d.role, team_id: d.team_id || null }))}>
                     <Check size={12} /> Approve
                   </button>
@@ -132,7 +132,7 @@ export default function CompanyInvites({ company }) {
 
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-2">Pending invites</h3>
-        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {invites === null && <p className="p-4 text-sm text-gray-400">Loading…</p>}
           {invites?.length === 0 && <p className="p-4 text-sm text-gray-400">No pending invites.</p>}
           {invites?.map((i) => (

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckSquare, Clock, AlertTriangle, TrendingUp, Flame } from "lucide-react";
+import { CheckCircle, HourglassMedium, WarningCircle, CalendarCheck, Fire } from "@phosphor-icons/react";
+import StatCard from "../components/ui/StatCard";
+import { getStoredUser } from "../api/api";
 import { apiRequest } from "../utils/api";
 import Heatmap from "../components/Heatmap";
 import GoalBar from "../components/GoalBar";
 import { localMonth } from "../utils/date";
 import UnreadAnnouncements from "../components/UnreadAnnouncements";
+import AreaTile from "../components/AreaTile";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -52,11 +55,14 @@ export default function Dashboard() {
   }, [navigate]);
 
   const statCards = [
-    { label: "Completed",   value: stats.done,    icon: CheckSquare,  color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "In Progress", value: stats.doing,   icon: Clock,        color: "text-amber-600",   bg: "bg-amber-50"   },
-    { label: "Delayed",     value: stats.delayed, icon: AlertTriangle, color: "text-rose-600",   bg: "bg-rose-50"    },
-    { label: "This Month",  value: stats.total,   icon: TrendingUp,   color: "text-gray-600",    bg: "bg-gray-50"    },
+    { label: "Completed",   value: stats.done,    icon: CheckCircle,     hue: "teal" },
+    { label: "In progress", value: stats.doing,   icon: HourglassMedium, hue: "amber" },
+    { label: "Delayed",     value: stats.delayed, icon: WarningCircle,   hue: "rose" },
+    { label: "This month",  value: stats.total,   icon: CalendarCheck,   hue: "indigo" },
   ];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const firstName = (getStoredUser()?.name || "").split(" ")[0];
 
   const completionRate = stats.total
     ? Math.round((stats.done / stats.total) * 100)
@@ -80,52 +86,41 @@ export default function Dashboard() {
   return (
     <div className="p-6 lg:p-8 max-w-5xl">
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="page-title"><AreaTile />{greeting}{firstName ? `, ${firstName}` : ""}</h1>
           <p className="text-sm text-gray-500 mt-1">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </p>
         </div>
 
-        {/* Streak badge */}
         {streak > 0 && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            <Flame size={16} className="text-amber-500" />
+          <div className="flex items-center gap-3 bg-white border border-amber-200 rounded-xl pl-2 pr-4 py-2">
+            <span className="tile tile-amber w-10 h-10"><Fire size={24} weight="fill" /></span>
             <div>
-              <p className="text-sm font-bold text-gray-900">{streak}-day streak</p>
-              <p className="text-[10px] text-amber-600">Keep it up!</p>
+              <p className="font-display text-lg font-bold text-gray-900 leading-tight">{streak}-day streak</p>
+              <p className="text-xs text-amber-700">Log something today to keep it going</p>
             </div>
-
-      <UnreadAnnouncements />
           </div>
         )}
       </div>
 
+      <UnreadAnnouncements />
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
-              <div className={`${bg} p-1.5 rounded`}>
-                <Icon size={14} className={color} />
-              </div>
-            </div>
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {statCards.map((c) => <StatCard key={c.label} {...c} />)}
       </div>
 
       {/* Completion bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-700">Monthly completion</span>
-          <span className="text-sm font-semibold text-gray-900">{completionRate}%</span>
+          <span className="text-sm font-semibold text-gray-900">Monthly completion</span>
+          <span className="font-display text-2xl font-bold text-gray-900">{completionRate}%</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gray-900 rounded-full transition-all duration-500"
+            className="h-full btn-accent rounded-full transition-all duration-500"
             style={{ width: `${completionRate}%` }}
           />
         </div>
@@ -137,9 +132,9 @@ export default function Dashboard() {
       </div>
 
       {/* Goals */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-8">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-gray-700">Goals</span>
+          <span className="text-sm font-semibold text-gray-900">Goals</span>
           <button onClick={() => navigate("/goals")} className="text-xs text-gray-500 hover:text-gray-900 font-medium">
             {goals.length ? "Manage" : "Set a goal"}
           </button>
@@ -156,9 +151,9 @@ export default function Dashboard() {
       <Heatmap />
 
       {/* Recent tasks */}
-      <div className="bg-white border border-gray-200 rounded-lg">
+      <div className="bg-white border border-gray-200 rounded-xl">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Recent activity</h2>
+          <h2 className="font-display text-base font-bold text-gray-900">Recent activity</h2>
           <button
             onClick={() => navigate("/mydones")}
             className="text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors"

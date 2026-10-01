@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import api, { setAccessToken, logout } from "../api/api";
 import { EditProfileForm, ChangePasswordForm } from "../components/ProfileForms";
+import AreaTile from "../components/AreaTile";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
@@ -192,7 +193,7 @@ export default function Profile() {
     <div className="p-6 lg:p-8 max-w-3xl">
       <div className="mb-8 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Profile</h1>
+          <h1 className="page-title"><AreaTile />Profile</h1>
           <p className="text-sm text-gray-500 mt-1">
             Manage your account and signed-in devices
           </p>
@@ -207,9 +208,9 @@ export default function Profile() {
       )}
 
       {/* Account ---------------------------------------------------- */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center text-lg font-semibold shrink-0">
+          <div className="w-12 h-12 rounded-full btn-accent flex items-center justify-center text-lg font-semibold shrink-0">
             {initial}
           </div>
           <div className="min-w-0">
@@ -235,25 +236,25 @@ export default function Profile() {
         <>
         <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-gray-500">
               Display name
             </p>
             <p className="text-sm text-gray-900 mt-1">{user?.name || "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-gray-500">
               Email
             </p>
             <p className="text-sm text-gray-900 mt-1 truncate">{user?.email || "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-gray-500">
               Timezone
             </p>
             <p className="text-sm text-gray-900 mt-1">{user?.timezone || "UTC"}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-medium text-gray-500">
               Email status
             </p>
             <p className={`text-sm mt-1 ${user?.email_verified === false ? "text-amber-600" : "text-emerald-600"}`}>
@@ -276,9 +277,9 @@ export default function Profile() {
       <ChangePasswordForm onChanged={() => loadSessions().catch(() => {})} />
 
       {/* Active sessions -------------------------------------------- */}
-      <div className="bg-white border border-gray-200 rounded-lg mb-6">
+      <div className="bg-white border border-gray-200 rounded-xl mb-6">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Active sessions</h2>
+          <h2 className="font-display text-[17px] font-bold text-gray-900">Active sessions</h2>
           <p className="text-xs text-gray-500 mt-0.5">
             Devices currently signed in to your account
           </p>
@@ -358,13 +359,13 @@ export default function Profile() {
       </div>
 
       {/* Danger zone ------------------------------------------------ */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
         <div className="flex items-start gap-3">
           <div className="bg-rose-50 p-2 rounded shrink-0">
             <ShieldAlert size={16} className="text-rose-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-sm font-semibold text-gray-900">
+            <h2 className="font-display text-[17px] font-bold text-gray-900">
               Sign out of all other devices
             </h2>
             <p className="text-xs text-gray-500 mt-1">

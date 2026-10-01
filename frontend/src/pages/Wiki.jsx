@@ -7,6 +7,7 @@ import { useCompanyPeople } from "../utils/companyPeople";
 import Markdown from "../components/Markdown";
 import { aiRequest, useAI } from "../utils/ai";
 import { Sparkles } from "lucide-react";
+import AreaTile from "../components/AreaTile";
 
 // "Ask the wiki": an answer from the pages you can see, with links to them
 function AskWiki({ onOpen }) {
@@ -34,10 +35,10 @@ function AskWiki({ onOpen }) {
           <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className={`${inputCls} w-full pl-8`} placeholder="Ask the wiki, e.g. How do refunds work?" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <button disabled={busy} className="px-3 py-2 bg-gray-900 text-white text-sm rounded-md disabled:opacity-50">{busy ? "Looking…" : "Ask"}</button>
+        <button disabled={busy} className="px-3 py-2 btn-accent text-sm rounded-md disabled:opacity-50">{busy ? "Looking…" : "Ask"}</button>
       </form>
       {res && (
-        <div className="mt-2 bg-white border border-gray-200 rounded-lg p-4">
+        <div className="mt-2 bg-white border border-gray-200 rounded-xl p-4">
           <Markdown text={res.answer} />
           {res.sources.length > 0 && (
             <p className="text-xs text-gray-500 mt-2">From: {res.sources.map((s, i) => (
@@ -51,7 +52,7 @@ function AskWiki({ onOpen }) {
   );
 }
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const who = (u) => u?.name || u?.email;
 
 // Left-hand tree: company pages, then each team's pages
@@ -76,7 +77,7 @@ function Tree({ pages, current, onOpen }) {
         if (!roots.length && s.key) return null;
         return (
           <div key={s.key || "company"}>
-            <p className="px-2 text-[11px] font-medium uppercase tracking-wide text-gray-400 mb-1">{s.name}</p>
+            <p className="px-2 text-[11px] font-medium text-gray-400 mb-1">{s.name}</p>
             {roots.length ? roots.map((p) => <Node key={p.id} page={p} depth={0} />) : <p className="px-2 text-xs text-gray-400">No pages yet</p>}
           </div>
         );
@@ -107,7 +108,7 @@ function Editor({ initial, teams, pages, isNew, onSave, onCancel }) {
         <div className="flex gap-1 ml-auto">
           {[[false, "Write"], [true, "Preview"]].map(([v, label]) => (
             <button key={label} type="button" onClick={() => setPreview(v)}
-              className={`px-3 py-1 text-xs rounded-md ${preview === v ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"}`}>{label}</button>
+              className={`px-3 py-1 text-xs rounded-md ${preview === v ? "btn-accent " : "bg-gray-100 text-gray-600"}`}>{label}</button>
           ))}
         </div>
       </div>
@@ -118,7 +119,7 @@ function Editor({ initial, teams, pages, isNew, onSave, onCancel }) {
           placeholder={"# Heading\n\nWrite in plain text. **bold**, *italic*, `code`, [link](https://…)\n\n- lists\n- [ ] checkboxes"} />
       )}
       <div className="flex gap-2">
-        <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Save page</button>
+        <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Save page</button>
         <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
       </div>
     </form>
@@ -184,11 +185,11 @@ export default function Wiki() {
     <div className="p-6 lg:p-8 max-w-6xl">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Wiki</h1>
+          <h1 className="page-title"><AreaTile />Wiki</h1>
           <p className="text-sm text-gray-500 mt-1">How things work here: handbooks, runbooks, team notes.</p>
         </div>
         {mode !== "new" && (
-          <button onClick={() => setMode("new")} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button onClick={() => setMode("new")} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md">
             <Plus size={14} /> New page
           </button>
         )}
@@ -197,7 +198,7 @@ export default function Wiki() {
       <AskWiki onOpen={(pid) => navigate(`/wiki/${pid}`)} />
 
       <div className="flex flex-col md:flex-row gap-6">
-        <aside className="md:w-60 shrink-0 bg-white border border-gray-200 rounded-lg p-2 self-start">
+        <aside className="md:w-60 shrink-0 bg-white border border-gray-200 rounded-xl p-2 self-start">
           <Tree pages={pages} current={page?.id} onOpen={open} />
         </aside>
 
@@ -207,7 +208,7 @@ export default function Wiki() {
             <Editor isNew initial={{ title: "", body: "", team_id: "", parent_id: page && !page.team_id ? page.id : "" }} teams={teams} pages={pages}
               onSave={save} onCancel={() => setMode("read")} />
           ) : !page ? (
-            <div className="bg-white border border-gray-200 rounded-lg py-14 text-center text-gray-400">
+            <div className="bg-white border border-gray-200 rounded-xl py-14 text-center text-gray-400">
               <BookOpen size={28} className="mx-auto mb-2 text-gray-300" />
               <p className="text-sm">{pages.length ? "Pick a page on the left." : "No pages yet. Start with a handbook or a runbook."}</p>
             </div>
@@ -215,7 +216,7 @@ export default function Wiki() {
             <Editor initial={{ id: page.id, title: page.title, body: page.body, team_id: page.team_id || "", parent_id: page.parent_id || "" }}
               teams={teams} pages={pages} onSave={save} onCancel={() => setMode("read")} />
           ) : (
-            <article className="bg-white border border-gray-200 rounded-lg p-6">
+            <article className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="flex flex-wrap items-start gap-2 mb-1">
                 <h2 className="text-2xl font-semibold text-gray-900 flex-1 min-w-[200px]">{page.title}</h2>
                 {page.can_edit && (

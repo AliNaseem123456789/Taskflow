@@ -4,8 +4,9 @@ import { Plus, Scale, Search } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useCompanyPeople } from "../utils/companyPeople";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const STATUS = {
   proposed: { label: "Proposed", chip: "bg-amber-50 text-amber-700" },
   decided: { label: "Decided", chip: "bg-emerald-50 text-emerald-700" },
@@ -56,18 +57,18 @@ export default function Decisions() {
     <div className="p-6 lg:p-8 max-w-4xl">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Decisions</h1>
+          <h1 className="page-title"><AreaTile />Decisions</h1>
           <p className="text-sm text-gray-500 mt-1">What was decided and why. Decisions from finished meetings land here too.</p>
         </div>
         {!adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md">
             <Plus size={14} /> Log a decision
           </button>
         )}
       </div>
 
       {adding && (
-        <form onSubmit={save} className="bg-white border border-gray-200 rounded-lg p-4 space-y-2 mb-5">
+        <form onSubmit={save} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2 mb-5">
           <input required autoFocus className={`${inputCls} w-full`} placeholder="We decided to…" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <textarea rows={3} className={`${inputCls} w-full`} placeholder="Why? What else was considered?" value={form.context} onChange={(e) => setForm({ ...form, context: e.target.value })} />
           <div className="flex flex-wrap gap-2">
@@ -82,7 +83,7 @@ export default function Decisions() {
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Save</button>
+            <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Save</button>
             <button type="button" onClick={() => setAdding(false)} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
           </div>
         </form>
@@ -101,14 +102,14 @@ export default function Decisions() {
 
       {list === null && <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />}
       {list?.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400">
           <Scale size={26} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm">{q || status ? "Nothing matches." : "No decisions logged yet."}</p>
         </div>
       )}
       <div className="space-y-2">
         {list?.map((d) => (
-          <div key={d.id} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={d.id} className="bg-white border border-gray-200 rounded-xl p-4">
             <div className="flex flex-wrap items-start gap-2">
               <p className={`text-sm font-medium text-gray-900 flex-1 min-w-[200px] ${d.status === "reversed" ? "line-through text-gray-400" : ""}`}>{d.title}</p>
               {d.can_edit ? (

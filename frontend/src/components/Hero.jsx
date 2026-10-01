@@ -10,7 +10,7 @@ export default function Hero() {
           Free 14-day trial &mdash; no credit card
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
+        <h1 className="font-display text-4xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
           Track what you've done,
           <br />
           <span className="text-gray-400">not just what's left.</span>
@@ -24,7 +24,7 @@ export default function Hero() {
         <div className="flex items-center justify-center gap-3">
           <Link
             to="/signup"
-            className="inline-flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 btn-accent px-5 py-2.5 rounded-md text-sm font-medium transition-colors"
           >
             Get started free
             <ArrowRight size={16} />
@@ -46,7 +46,7 @@ export default function Hero() {
           ].map(([Icon, label]) => (
             <div
               key={label}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-600"
             >
               <Icon size={16} className="text-gray-400" />
               {label}
@@ -56,4 +56,4 @@ export default function Hero() {
       </div>
     </section>
   );
-}
+}

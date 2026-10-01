@@ -1,168 +1,112 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { logout, getStoredUser } from "../api/api";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { SignOut, X } from "@phosphor-icons/react";
+import { logout, getStoredUser, getWorkspace } from "../api/api";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import RunningTimer from "./RunningTimer";
-import { getWorkspace } from "../api/api";
-import {
-  LayoutDashboard,
-  CheckSquare,
-  Calendar,
-  Bell,
-  BarChart3,
-  LogOut,
-  UserCircle,
-  User,
-  X,
-  Users,
-  Search,
-  Columns3,
-  Target,
-  Plug,
-  Building2,
-  Inbox,
-  Megaphone,
-  Video,
-  Activity,
-  Scale,
-  BookOpen,
-  Plane,
-  Gauge,
-  Briefcase,
-  LineChart as LineChartIcon,
-  Lightbulb,
-  Timer,
-  ClipboardList,
-  BadgeCheck,
-  BriefcaseBusiness,
-  Compass,
-} from "lucide-react";
 import { useAI } from "../utils/ai";
+import { AREAS } from "../utils/areas";
+import BrandMark from "./ui/BrandMark";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard",  path: "/dashboard" },
-  { icon: Inbox,           label: "Inbox",      path: "/inbox"     },
-  { icon: CheckSquare,     label: "My Dones",   path: "/mydones"   },
-  { icon: Columns3,        label: "Board",      path: "/board"     },
-  { icon: Calendar,        label: "Calendar",   path: "/calendar"  },
-  { icon: Timer,           label: "Timesheet",  path: "/timesheet" },
-  { icon: Target,          label: "Goals",      path: "/goals"     },
-  { icon: Search,          label: "Search",     path: "/search"    },
-  { icon: Users,           label: "Team",       path: "/team"      },
-  { icon: Compass,         label: "Discover",   path: "/discover"  },
-  { icon: Bell,            label: "Reminders",  path: "/reminders" },
-  { icon: BarChart3,       label: "Reports",    path: "/reports"   },
-  { icon: Plug,            label: "Integrations", path: "/integrations" },
-  { icon: UserCircle,      label: "Profile",    path: "/profile"   },
+// Navigation in groups; each item takes its icon and colour from utils/areas.js
+const MAIN = [
+  { items: ["/dashboard", "/inbox", "/mydones", "/search"] },
+  { title: "Plan", items: ["/board", "/calendar", "/timesheet", "/goals", "/reminders"] },
+  { title: "Together", items: ["/team", "/discover", "/reports"] },
 ];
+// only inside a company workspace
+const COMPANY = [
+  { title: "Company", items: ["/meetings", "/announcements", "/updates", "/decisions", "/wiki"] },
+  { title: "Operations", items: ["/portfolios", "/forms", "/approvals", "/workload", "/time-off", "/analytics"] },
+  { title: "People", items: ["/jobs", "/company"] },
+];
+const FOOTER = ["/integrations", "/profile"];
 
-// Shown only inside a company workspace
-const companyItems = [
-  { section: "Company" },
-  { icon: Video,      label: "Meetings",      path: "/meetings" },
-  { icon: Megaphone,  label: "Announcements", path: "/announcements" },
-  { icon: Activity,   label: "Project updates", path: "/updates" },
-  { icon: Briefcase,  label: "Portfolios",    path: "/portfolios" },
-  { icon: ClipboardList, label: "Request forms", path: "/forms" },
-  { icon: BadgeCheck, label: "Approvals",     path: "/approvals" },
-  { icon: BriefcaseBusiness, label: "Job board", path: "/jobs" },
-  { icon: Scale,      label: "Decisions",     path: "/decisions" },
-  { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
-  { icon: Plane,      label: "Time off",      path: "/time-off" },
-  { icon: Gauge,      label: "Workload",      path: "/workload" },
-  { icon: LineChartIcon, label: "Analytics",  path: "/analytics" },
-  { icon: Building2,  label: "People & settings", path: "/company" },
-];
+function NavItem({ path, active, onClick }) {
+  const { icon: Icon, hue, label } = AREAS[path];
+  return (
+    <button
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={`w-full flex items-center gap-3 px-2 py-1.5 rounded-lg text-[14px] transition-colors ${
+        active ? "bg-gray-100 text-gray-900 font-semibold" : "text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900"
+      }`}
+    >
+      <span className={`tile tile-${hue} w-7 h-7 rounded-lg ${active ? "is-on" : ""}`}>
+        <Icon size={18} weight={active ? "fill" : "duotone"} />
+      </span>
+      {label}
+    </button>
+  );
+}
 
 export default function Sidebar({ onClose }) {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-
+  const navigate = useNavigate();
+  const location = useLocation();
   const user = getStoredUser();
   const ai = useAI();
 
-  const handleLogout = () => logout();
-
-  const handleNav = (path) => {
+  const go = (path) => {
     navigate(path);
     onClose?.();
   };
+  const isActive = (path) => {
+    const p = location.pathname.toLowerCase();
+    if (path === "/profile") return p === "/profile" || p === "/profile/public";
+    return p === path || p.startsWith(`${path}/`);
+  };
+
+  const groups = [...MAIN, ...(getWorkspace() ? COMPANY : [])].map((g) =>
+    g.title === "Together" && ai.on ? { ...g, items: [...g.items, "/solve"] } : g
+  );
 
   return (
-    <div className="w-60 h-screen bg-white border-r border-gray-200 flex flex-col">
-      {/* Logo */}
-      <div className="px-5 h-14 flex items-center justify-between border-b border-gray-100 shrink-0">
-        <div
-          className="flex items-center gap-2.5 cursor-pointer"
-          onClick={() => handleNav("/dashboard")}
-        >
-          <div className="w-5 h-5 bg-gray-900 rounded" />
-          <span className="font-semibold text-gray-900 text-[15px]">Task Flow</span>
-        </div>
+    <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
+      {/* Brand */}
+      <div className="px-4 h-16 flex items-center justify-between shrink-0">
+        <Link to="/dashboard" onClick={() => onClose?.()} aria-label="Task Flow home">
+          <BrandMark size={32} />
+        </Link>
         <div className="flex items-center gap-1">
-        <NotificationBell />
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100 text-gray-400 lg:hidden"
-          >
-            <X size={18} />
-          </button>
-        )}
+          <NotificationBell />
+          {onClose && (
+            <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400 lg:hidden" aria-label="Close menu">
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 
       <WorkspaceSwitcher onNavigate={onClose} />
       <RunningTimer onNavigate={onClose} />
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {[...navItems.slice(0, 12), ...(ai.on ? [{ icon: Lightbulb, label: "Solve a problem", path: "/solve" }] : []), ...navItems.slice(12), ...(getWorkspace() ? companyItems : [])].map(({ icon: Icon, label, path, section }) => {
-          if (section)
-            return <p key={section} className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{section}</p>;
-          const active = location.pathname === path ||
-            (path !== "/" && location.pathname.startsWith(`${path}/`));
-          return (
-            <button
-              key={path}
-              onClick={() => handleNav(path)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
-                active
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-              }`}
-            >
-              <Icon size={16} strokeWidth={active ? 2 : 1.5} />
-              {label}
-            </button>
-          );
-        })}
+      <nav className="flex-1 px-3 py-3 overflow-y-auto">
+        {groups.map((g, i) => (
+          <div key={g.title || i} className={i ? "mt-4" : ""}>
+            {g.title && <p className="px-2 pb-1.5 text-xs font-semibold text-gray-400">{g.title}</p>}
+            <div className="space-y-0.5">
+              {g.items.map((path) => <NavItem key={path} path={path} active={isActive(path)} onClick={() => go(path)} />)}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* User section */}
-      <div className="border-t border-gray-100 p-3 space-y-1 shrink-0">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center">
-            <User size={14} className="text-gray-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-gray-900 truncate">
-              {user?.name || user?.email || "User"}
-            </p>
-          </div>
-        </div>
+      <div className="border-t border-gray-100 p-3 space-y-0.5 shrink-0">
+        {FOOTER.map((path) => <NavItem key={path} path={path} active={isActive(path)} onClick={() => go(path)} />)}
         <ThemeToggle
           withLabel
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg text-[14px] font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors [&>svg]:mx-1.5"
         />
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-        >
-          <LogOut size={16} strokeWidth={1.5} />
-          Log out
-        </button>
+        <div className="flex items-center gap-3 px-2 pt-2">
+          <span className="w-7 h-7 rounded-full btn-accent flex items-center justify-center text-xs font-semibold">
+            {(user?.name || user?.email || "?")[0].toUpperCase()}
+          </span>
+          <p className="flex-1 min-w-0 text-[13px] font-medium text-gray-900 truncate">{user?.name || user?.email || "You"}</p>
+          <button onClick={() => logout()} className="p-1.5 rounded-md text-gray-400 hover:text-gray-900 hover:bg-gray-100" aria-label="Log out" title="Log out">
+            <SignOut size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

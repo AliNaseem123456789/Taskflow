@@ -7,8 +7,9 @@ import { useCompanyPeople } from "../utils/companyPeople";
 import { useLiveEvent } from "../utils/live";
 import { localDate } from "../utils/date";
 import { MEETING_KINDS, kindLabel } from "../utils/meetings";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const RESPONSE_STYLE = { yes: "text-emerald-600", no: "text-rose-600", maybe: "text-amber-600", pending: "text-gray-400" };
 
 const dayKey = (iso) => localDate(new Date(iso));
@@ -61,11 +62,11 @@ function NewMeeting({ onCreated, onCancel }) {
   };
 
   return (
-    <form onSubmit={save} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3 mb-6">
+    <form onSubmit={save} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 mb-6">
       <div className="flex flex-wrap gap-1">
         {MEETING_KINDS.map(([k, label]) => (
           <button key={k} type="button" onClick={() => set({ kind: k, attendee_ids: k === "one_on_one" ? form.attendee_ids.slice(0, 1) : form.attendee_ids, recurrence: k === "one_on_one" && !form.recurrence ? "weekly" : form.recurrence })}
-            className={`px-3 py-1 text-xs rounded-full border ${form.kind === k ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>
+            className={`px-3 py-1 text-xs rounded-full border ${form.kind === k ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>
             {label}
           </button>
         ))}
@@ -97,7 +98,7 @@ function NewMeeting({ onCreated, onCancel }) {
         <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
           {others.map((m) => (
             <button key={m.id} type="button" onClick={() => toggle(m.id)}
-              className={`text-xs px-2.5 py-1 rounded-full border ${form.attendee_ids.includes(m.id) ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
+              className={`text-xs px-2.5 py-1 rounded-full border ${form.attendee_ids.includes(m.id) ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
               {m.name || m.email}
             </button>
           ))}
@@ -107,7 +108,7 @@ function NewMeeting({ onCreated, onCancel }) {
       {form.kind === "one_on_one" && <p className="text-xs text-gray-400">1:1 notes are private to the two of you; not even admins can read them.</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
-        <button className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Schedule</button>
+        <button className="px-4 py-2 btn-accent text-sm rounded-md">Schedule</button>
         <button type="button" onClick={onCancel} className="px-3 py-2 text-sm text-gray-500">Cancel</button>
       </div>
     </form>
@@ -150,11 +151,11 @@ export default function Meetings() {
     <div className="p-6 lg:p-8 max-w-4xl">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Meetings</h1>
+          <h1 className="page-title"><AreaTile />Meetings</h1>
           <p className="text-sm text-gray-500 mt-1">Agendas, notes and action items that turn into tasks.</p>
         </div>
         {!creating && (
-          <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">
+          <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md">
             <CalendarPlus size={14} /> New meeting
           </button>
         )}
@@ -165,14 +166,14 @@ export default function Meetings() {
       <div className="flex gap-1 mb-4">
         {[[false, `Upcoming (${upcoming.length})`], [true, `Past (${past.length})`]].map(([v, label]) => (
           <button key={label} onClick={() => setShowPast(v)}
-            className={`px-3 py-1.5 text-sm rounded-md ${showPast === v ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            className={`px-3 py-1.5 text-sm rounded-md ${showPast === v ? "btn-accent " : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
             {label}
           </button>
         ))}
       </div>
 
       {list.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400">
           <Users size={26} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm">{showPast ? "No past meetings in the last 30 days." : "Nothing scheduled."}</p>
         </div>
@@ -182,7 +183,7 @@ export default function Meetings() {
         {Object.entries(groups).map(([key, items]) => (
           <div key={key}>
             <p className="text-xs font-medium text-gray-500 mb-1.5">{dayLabel(key)}</p>
-            <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+            <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
               {items.map((m) => (
                 <Link key={m.id} to={`/meetings/${m.id}`} className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 ${m.status === "cancelled" ? "opacity-50" : ""}`}>
                   <div className="w-16 shrink-0">

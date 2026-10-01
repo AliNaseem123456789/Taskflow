@@ -37,7 +37,7 @@ export default function JoinTeam() {
 
   return (
     <div className="p-6 lg:p-8 flex justify-center">
-      <div className="w-full max-w-sm bg-white border border-gray-200 rounded-lg p-6 text-center mt-10">
+      <div className="w-full max-w-sm bg-white border border-gray-200 rounded-xl p-6 text-center mt-10">
         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Users size={18} className="text-gray-500" />
         </div>
@@ -55,7 +55,7 @@ export default function JoinTeam() {
               <button
                 onClick={accept}
                 disabled={joining}
-                className="mt-5 w-full bg-gray-900 text-white py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                className="mt-5 w-full btn-accent py-2 rounded-md text-sm font-medium disabled:opacity-50"
               >
                 {joining ? "Joining…" : "Join team"}
               </button>

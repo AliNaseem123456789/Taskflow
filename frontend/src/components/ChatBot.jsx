@@ -57,7 +57,7 @@ function Proposals({ items, onDone }) {
         <p className="text-xs text-emerald-700 flex items-center gap-1"><Check size={12} /> {state}</p>
       ) : (
         <button onClick={create} disabled={!picked.some(Boolean)}
-          className="w-full text-xs py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40">
+          className="w-full text-xs py-1.5 rounded-md btn-accent disabled:opacity-40">
           Create {picked.filter(Boolean).length} task{picked.filter(Boolean).length === 1 ? "" : "s"}
         </button>
       )}
@@ -115,14 +115,14 @@ export default function Chatbot() {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} aria-label="Open assistant"
-        className="fixed bottom-6 right-6 w-11 h-11 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors z-50">
+        className="fixed bottom-6 right-6 w-11 h-11 btn-accent rounded-full flex items-center justify-center shadow-lg transition-colors z-50">
         <MessageCircle size={18} />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden max-h-[80vh]">
+    <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 flex flex-col overflow-hidden max-h-[80vh]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-gray-700" />
@@ -138,7 +138,7 @@ export default function Chatbot() {
         {messages.map((msg, i) => (
           <div key={i} className={msg.role === "user" ? "flex justify-end" : "space-y-2"}>
             <div className={`max-w-[90%] px-3 py-2 rounded-lg text-sm ${
-              msg.role === "user" ? "bg-gray-900 text-white" : msg.error ? "bg-rose-50 text-rose-700" : "bg-gray-100 text-gray-800"
+              msg.role === "user" ? "btn-accent " : msg.error ? "bg-rose-50 text-rose-700" : "bg-gray-100 text-gray-800"
             }`}>
               {msg.role === "user" ? msg.text : <Markdown text={msg.text} />}
             </div>
@@ -154,7 +154,7 @@ export default function Chatbot() {
           placeholder={signedIn ? "e.g. What's overdue on my team?" : "Type a message..."}
           className="flex-1 text-sm outline-none placeholder:text-gray-400 bg-transparent" disabled={isLoading} />
         <button onClick={handleSend} disabled={isLoading || !input.trim()} aria-label="Send"
-          className="p-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 transition-colors">
+          className="p-1.5 rounded-md btn-accent disabled:opacity-30 transition-colors">
           <Send size={14} />
         </button>
       </div>

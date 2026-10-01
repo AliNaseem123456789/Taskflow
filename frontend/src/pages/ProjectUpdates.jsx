@@ -5,8 +5,9 @@ import { apiRequest } from "../utils/api";
 import { aiRequest, useAI } from "../utils/ai";
 import { Sparkles } from "lucide-react";
 import { getWorkspace } from "../api/api";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const HEALTH = {
   on_track: { label: "On track", chip: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
   at_risk: { label: "At risk", chip: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
@@ -86,7 +87,7 @@ function ProjectHistory({ project, onPosted }) {
             <textarea rows={2} className={inputCls} placeholder="Next steps" value={form.next_steps} onChange={(e) => setForm({ ...form, next_steps: e.target.value })} />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
-          <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Post update</button>
+          <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Post update</button>
         </form>
       )}
       {data.updates.length === 0 && <p className="text-xs text-gray-400">No updates yet{data.can_post ? "" : " — the team lead posts them"}.</p>}
@@ -120,7 +121,7 @@ export default function ProjectUpdates() {
   const counts = Object.fromEntries(Object.keys(HEALTH).map((k) => [k, projects.filter((p) => p.latest?.health === k).length]));
   return (
     <div className="p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-xl font-semibold text-gray-900">Project updates</h1>
+      <h1 className="page-title"><AreaTile />Project updates</h1>
       <p className="text-sm text-gray-500 mt-1 mb-4">How each project is doing, as told by its team lead.</p>
       <div className="flex flex-wrap gap-2 mb-5">
         {Object.entries(HEALTH).map(([k, h]) => (
@@ -129,12 +130,12 @@ export default function ProjectUpdates() {
         <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">{projects.filter((p) => !p.latest).length} without an update</span>
       </div>
       {projects.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg py-12 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400">
           <Activity size={26} className="mx-auto mb-2 text-gray-300" />
           <p className="text-sm">No projects you can see yet.</p>
         </div>
       )}
-      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+      <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
         {projects.map((p) => {
           const h = p.latest && HEALTH[p.latest.health];
           const stale = p.latest && Date.now() - new Date(p.latest.created_at).getTime() > 14 * 86400000;

@@ -12,7 +12,7 @@ import { priorityInfo } from "../../utils/taskMeta";
 import { FieldsContext, fieldText, useMembersOf } from "../../utils/fields";
 
 const KINDS = [["todo", "Not started"], ["in_progress", "In progress"], ["done", "Done"]];
-const inputCls = "text-sm px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 
 function Card({ task, overlay = false }) {
   const p = priorityInfo(task.priority);
@@ -104,7 +104,7 @@ function ColumnEditor({ team, project, statuses, onClose, onSaved }) {
     }
   };
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 space-y-2 max-w-2xl">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-2 max-w-2xl">
       <p className="text-sm font-semibold text-gray-900">Columns</p>
       {list.map((s, i) => (
         <div key={s.id || `new${i}`} className="flex flex-wrap items-center gap-2">
@@ -123,7 +123,7 @@ function ColumnEditor({ team, project, statuses, onClose, onSaved }) {
       <p className="text-xs text-gray-400">Cards in a removed column move to the first column of the same kind.</p>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={save} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Save columns</button>
+        <button onClick={save} className="px-3 py-1.5 btn-accent text-sm rounded-md">Save columns</button>
         <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500">Cancel</button>
       </div>
     </div>

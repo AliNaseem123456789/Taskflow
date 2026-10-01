@@ -27,7 +27,7 @@ export default function Reviews() {
           {reviews.map((r, i) => (
             <div
               key={i}
-              className="break-inside-avoid bg-white border border-gray-200 rounded-lg p-5"
+              className="break-inside-avoid bg-white border border-gray-200 rounded-xl p-5"
             >
               <p className="text-sm text-gray-600 leading-relaxed mb-3">
                 &ldquo;{r.text}&rdquo;
@@ -44,4 +44,4 @@ export default function Reviews() {
       </div>
     </section>
   );
-}
+}

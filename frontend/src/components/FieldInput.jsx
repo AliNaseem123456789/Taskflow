@@ -1,5 +1,5 @@
 // One input for a custom field value (text, number, dropdown, date, person, checkbox)
-const cls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900 w-full disabled:bg-gray-50";
+const cls = "text-sm px-2.5 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900 w-full disabled:bg-gray-50";
 
 export default function FieldInput({ field, value, onChange, people = [], disabled, id }) {
   const v = value ?? "";

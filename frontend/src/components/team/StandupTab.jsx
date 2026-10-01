@@ -12,7 +12,7 @@ const QUESTIONS = [
   ["blockers", "Anything blocking you?"],
 ];
 const areaCls =
-  "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white min-h-[64px]";
+  "w-full text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white min-h-[64px]";
 
 // Daily standup: post your own answers, read everyone else's
 export default function StandupTab({ team, date }) {
@@ -83,9 +83,9 @@ export default function StandupTab({ team, date }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-4 items-start">
-      <form onSubmit={save} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
+      <form onSubmit={save} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Your standup {isToday ? "today" : `for ${date}`}</h2>
+          <h2 className="font-display text-[17px] font-bold text-gray-900">Your standup {isToday ? "today" : `for ${date}`}</h2>
           <button type="button" onClick={fillFromTasks} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900" title="Fill empty answers from your tasks">
             <Wand2 size={12} /> Fill from my tasks
           </button>
@@ -102,19 +102,19 @@ export default function StandupTab({ team, date }) {
           </div>
         ))}
         <div className="flex items-center gap-3">
-          <button className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Post standup</button>
+          <button className="px-3 py-1.5 btn-accent text-sm rounded-md">Post standup</button>
           {status && <span className="text-xs text-gray-500">{status}</span>}
         </div>
       </form>
 
       <div className="space-y-3">
         {others.filter((m) => m.standup).map((m) => (
-          <div key={m.id} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={m.id} className="bg-white border border-gray-200 rounded-xl p-4">
             <p className="text-sm font-semibold text-gray-900 mb-2">{m.name || m.email}</p>
             {QUESTIONS.map(([key, label]) =>
               m.standup[key] ? (
                 <div key={key} className="mb-2 last:mb-0">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
+                  <p className="text-[11px] text-gray-400">{label}</p>
                   <p className={`text-sm whitespace-pre-wrap ${key === "blockers" ? "text-amber-700" : "text-gray-700"}`}>{m.standup[key]}</p>
                 </div>
               ) : null

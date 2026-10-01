@@ -47,10 +47,10 @@ export default function DigestSettings({ team, onSaved }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+    <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Automatic daily digest</h2>
+          <h2 className="font-display text-[17px] font-bold text-gray-900">Automatic daily digest</h2>
           <p className="text-xs text-gray-500 mt-0.5">Emails everyone what the team did and planned.</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -80,7 +80,7 @@ export default function DigestSettings({ team, onSaved }) {
               key={d}
               type="button"
               onClick={() => toggleDay(d)}
-              className={`px-2.5 py-1 text-xs rounded-md border ${days.includes(d) ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500"}`}
+              className={`px-2.5 py-1 text-xs rounded-md border ${days.includes(d) ? "btn-accent border-indigo-600" : "border-gray-200 text-gray-500"}`}
             >
               {d}
             </button>
@@ -89,7 +89,7 @@ export default function DigestSettings({ team, onSaved }) {
       </div>
 
       <div className="flex items-center gap-3 mt-4">
-        <button onClick={save} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800">Save</button>
+        <button onClick={save} className="px-3 py-1.5 btn-accent text-sm rounded-md">Save</button>
         {status && <span className="text-xs text-gray-500">{status}</span>}
       </div>
 

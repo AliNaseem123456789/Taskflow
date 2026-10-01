@@ -31,7 +31,7 @@ export default function HeroPricing() {
           </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
           <div className="grid grid-cols-2 gap-3 mb-8">
             {FEATURES.map((f) => (
               <div key={f} className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export default function HeroPricing() {
 
           <Link
             to="/signup"
-            className="block w-full text-center bg-gray-900 text-white py-3 rounded-md text-sm font-semibold hover:bg-gray-800 transition-colors"
+            className="block w-full text-center btn-accent py-3 rounded-md text-sm font-semibold transition-colors"
           >
             Start free trial
           </Link>
@@ -51,4 +51,4 @@ export default function HeroPricing() {
       </div>
     </section>
   );
-}
+}

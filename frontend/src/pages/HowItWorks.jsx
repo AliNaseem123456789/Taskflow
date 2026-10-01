@@ -27,7 +27,7 @@ export default function HowItWorks() {
     <div className="pt-14">
       {/* Hero */}
       <section className="py-20 px-6 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How it Works</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-900 mb-4">How it Works</h1>
         <p className="text-lg text-gray-500 max-w-lg mx-auto">
           The simple way to reflect on your day and stay motivated.
         </p>
@@ -79,7 +79,7 @@ export default function HowItWorks() {
             {features.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                className="bg-white border border-gray-200 rounded-xl p-6 hover:border-gray-300 transition-colors"
               >
                 <div className="w-9 h-9 bg-gray-100 rounded-md flex items-center justify-center mb-4">
                   <Icon size={18} className="text-gray-600" />
@@ -98,7 +98,7 @@ export default function HowItWorks() {
         <p className="text-gray-500 mb-6">Track your progress, celebrate your wins.</p>
         <Link
           to="/signup"
-          className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 btn-accent px-6 py-2.5 rounded-md text-sm font-medium transition-colors"
         >
           Start free trial
           <ArrowRight size={16} />
@@ -106,4 +106,4 @@ export default function HowItWorks() {
       </section>
     </div>
   );
-}
+}

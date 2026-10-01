@@ -10,7 +10,7 @@ import { useCompanyPeople } from "../utils/companyPeople";
 import { getStoredUser } from "../api/api";
 
 const smallInput =
-  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-700";
+  "text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-700";
 const EMPTY_EXTRA = { status: "Done", priority: "medium", due_date: "", recurrence: "", blocker: "", project_id: "", team_id: "", assignee_id: "", description: "" };
 
 export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
@@ -88,7 +88,7 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-gray-200 rounded-lg p-3 space-y-2"
+      className="bg-white border border-gray-200 rounded-xl p-3 space-y-2"
     >
       {/* Title row */}
       <div className="flex items-center gap-2">
@@ -112,8 +112,8 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
           <input autoFocus value={sentence} onChange={(e) => setSentence(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); fillFromSentence(); } if (e.key === "Escape") setSentence(null); }}
             placeholder='e.g. "Ask Sara to update the runbook by Friday, high priority"'
-            className="flex-1 text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white" />
-          <button type="button" onClick={fillFromSentence} className="text-xs px-2 py-1 bg-gray-900 text-white rounded-md">Fill in</button>
+            className="flex-1 text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white" />
+          <button type="button" onClick={fillFromSentence} className="text-xs px-2 py-1 btn-accent rounded-md">Fill in</button>
         </div>
       ))}
       {aiNote && <p className="text-[11px] text-gray-500">{aiNote}</p>}
@@ -214,7 +214,7 @@ export default function AddTaskForm({ onAdd, onCancel, dateLogged }) {
         <button
           type="submit"
           disabled={!title.trim() || loading}
-          className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-md hover:bg-gray-800 disabled:opacity-40 transition-colors font-medium"
+          className="text-xs btn-accent px-3 py-1.5 rounded-md disabled:opacity-40 transition-colors font-medium"
         >
           {loading ? "Adding…" : "Add"}
         </button>

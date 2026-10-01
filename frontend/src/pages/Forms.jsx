@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, ClipboardList, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { getWorkspace } from "../api/api";
 import { useMyProjects } from "../utils/projects";
 import { useCompanyPeople } from "../utils/companyPeople";
 import { STATUS_BADGE } from "../utils/taskMeta";
+import AreaTile from "../components/AreaTile";
 
-const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-gray-400 bg-white text-gray-900";
+const inputCls = "text-sm px-3 py-2 border border-gray-200 rounded-md outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 bg-white text-gray-900";
 const Q_KINDS = [["text", "Short answer"], ["textarea", "Long answer"], ["number", "Number"], ["select", "Dropdown"], ["date", "Date"]];
 const BUILT_IN = [["", "Only in the description"], ["title", "Task title"], ["description", "Task description"], ["due_date", "Due date"], ["priority", "Priority"]];
 const newId = () => `q${Math.random().toString(36).slice(2, 8)}`;
@@ -24,19 +25,19 @@ function FormList({ companyId }) {
     <div className="p-6 lg:p-8 max-w-5xl space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2"><ClipboardList size={20} /> Request forms</h1>
+          <h1 className="page-title"><AreaTile /> Request forms</h1>
           <p className="text-sm text-gray-500 mt-1">Ask another team for something. Each request becomes a task in their project, and you can follow it from here.</p>
         </div>
         {data?.can_create && (
-          <Link to="/forms/new" className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 shrink-0"><Plus size={14} /> New form</Link>
+          <Link to="/forms/new" className="flex items-center gap-1.5 px-3 py-2 btn-accent text-sm rounded-md shrink-0"><Plus size={14} /> New form</Link>
         )}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {data === null && !error && <p className="text-sm text-gray-400">Loading…</p>}
-      {data?.forms.length === 0 && <div className="bg-white border border-gray-200 rounded-lg p-10 text-center text-sm text-gray-400">No forms yet.</div>}
+      {data?.forms.length === 0 && <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">No forms yet.</div>}
       <div className="grid sm:grid-cols-2 gap-4">
         {data?.forms.map((f) => (
-          <div key={f.id} className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+          <div key={f.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-gray-900">{f.name}</p>
@@ -48,7 +49,7 @@ function FormList({ companyId }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {f.is_open && <Link to={`/forms/${f.id}`} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800">Fill in</Link>}
+              {f.is_open && <Link to={`/forms/${f.id}`} className="px-3 py-1.5 btn-accent text-xs rounded-md">Fill in</Link>}
               {f.can_edit && (
                 <>
                   <Link to={`/forms/${f.id}/edit`} className="px-3 py-1.5 border border-gray-200 text-xs rounded-md hover:bg-gray-50">Edit</Link>
@@ -61,8 +62,8 @@ function FormList({ companyId }) {
       </div>
       {data?.my_requests.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 mb-2">Your requests</h2>
-          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-50">
+          <h2 className="font-display text-[17px] font-bold text-gray-900 mb-2">Your requests</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-50">
             {data.my_requests.map((r) => (
               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
                 {r.task ? <Link to={`/tasks/${r.task.id}`} className="flex-1 min-w-0 truncate text-gray-900 hover:underline">{r.task.title}</Link> : <span className="flex-1 text-gray-400">Task removed</span>}
@@ -163,8 +164,8 @@ function FormBuilder({ companyId, id }) {
   return (
     <form onSubmit={save} className="p-6 lg:p-8 max-w-3xl space-y-5">
       <Link to="/forms" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> Request forms</Link>
-      <h1 className="text-xl font-semibold text-gray-900">{id ? "Edit form" : "New request form"}</h1>
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+      <h1 className="page-title"><AreaTile />{id ? "Edit form" : "New request form"}</h1>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
         <input required className={`${inputCls} w-full`} placeholder="Form name, e.g. IT help" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} aria-label="Form name" />
         <textarea rows={2} className={`${inputCls} w-full`} placeholder="Tell people when to use this form (optional)" value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         <div className="grid sm:grid-cols-3 gap-3">
@@ -194,7 +195,7 @@ function FormBuilder({ companyId, id }) {
       <div className="space-y-3">
         <p className="text-sm font-semibold text-gray-900">Questions</p>
         {form.questions.map((q, i) => (
-          <div key={q.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
+          <div key={q.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
             <div className="flex gap-2">
               <input required className={`${inputCls} flex-1`} placeholder="Question" value={q.label} onChange={(e) => setQ(i, { label: e.target.value })} aria-label={`Question ${i + 1}`} />
               <select className={inputCls} value={q.kind} disabled={!!fieldKindFor(q.maps_to)} onChange={(e) => setQ(i, { kind: e.target.value })} aria-label={`Type of question ${i + 1}`}>
@@ -233,7 +234,7 @@ function FormBuilder({ companyId, id }) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
-        <button disabled={busy} className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">{id ? "Save form" : "Create form"}</button>
+        <button disabled={busy} className="px-4 py-2 btn-accent text-sm rounded-md disabled:opacity-50">{id ? "Save form" : "Create form"}</button>
         {id && <button type="button" onClick={remove} className="px-4 py-2 border border-gray-200 text-sm text-rose-600 rounded-md hover:bg-rose-50">Delete</button>}
       </div>
     </form>
@@ -268,12 +269,12 @@ function FillForm({ companyId, id }) {
   if (done)
     return (
       <div className="p-6 lg:p-8 max-w-2xl">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center space-y-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-3">
           <CheckCircle2 size={32} className="mx-auto text-emerald-600" />
           <p className="text-base font-semibold text-gray-900">Request sent</p>
           <p className="text-sm text-gray-500">It's now a task in {form.project?.name}. You'll be able to follow it there.</p>
           <div className="flex justify-center gap-2 pt-1">
-            <Link to={`/tasks/${done.task_id}`} className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-md">Open the task</Link>
+            <Link to={`/tasks/${done.task_id}`} className="px-3 py-1.5 btn-accent text-sm rounded-md">Open the task</Link>
             <button onClick={() => { setDone(null); setAnswers({}); }} className="px-3 py-1.5 border border-gray-200 text-sm rounded-md">Send another</button>
           </div>
         </div>
@@ -284,11 +285,11 @@ function FillForm({ companyId, id }) {
     <form onSubmit={submit} className="p-6 lg:p-8 max-w-2xl space-y-5">
       <Link to="/forms" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> Request forms</Link>
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">{form.name}</h1>
+        <h1 className="page-title"><AreaTile />{form.name}</h1>
         {form.description && <p className="text-sm text-gray-500 mt-1 whitespace-pre-wrap">{form.description}</p>}
         <p className="text-xs text-gray-400 mt-1">Goes to {form.project?.name}</p>
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         {form.questions.map((q) => {
           const v = answers[q.id] ?? "";
           const set = (val) => setAnswers({ ...answers, [q.id]: val });
@@ -305,7 +306,7 @@ function FillForm({ companyId, id }) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {form.can_submit ? (
-        <button disabled={busy} className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 disabled:opacity-50">{busy ? "Sending…" : "Send request"}</button>
+        <button disabled={busy} className="px-4 py-2 btn-accent text-sm rounded-md disabled:opacity-50">{busy ? "Sending…" : "Send request"}</button>
       ) : <p className="text-sm text-gray-500">{form.is_open ? "Your role can't send requests." : "This form is closed."}</p>}
     </form>
   );
@@ -324,9 +325,9 @@ function Requests({ companyId, id }) {
   return (
     <div className="p-6 lg:p-8 max-w-5xl space-y-5">
       <Link to="/forms" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"><ArrowLeft size={14} /> Request forms</Link>
-      <h1 className="text-xl font-semibold text-gray-900">Requests · {form?.name}</h1>
+      <h1 className="page-title"><AreaTile />Requests · {form?.name}</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
