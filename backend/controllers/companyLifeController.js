@@ -186,6 +186,38 @@ export const requestTransfer = async (req, res) => {
   res.status(201).json(fresh);
 };
 
+// A move that comes from a hire on the job board. The hiring side asks; it is approved
+// right away when they may approve moves for these teams, otherwise it waits like any request.
+// Returns the transfer, or null when the person already has a move waiting or is on that team.
+export const transferForHire = async ({ companyId, userId, toTeamId, actor, effectiveDate, note }) => {
+  const toTeam = await teamInCompany(companyId, toTeamId);
+  if (!toTeam) return null;
+  const { data: teams } = await supabase.from("team_members").select("team_id, teams!inner(company_id)").eq("user_id", userId).eq("teams.company_id", companyId);
+  const current = (teams || []).map((t) => t.team_id);
+  if (current.includes(toTeam.id)) return null;
+  const row = {
+    company_id: companyId, user_id: userId, from_team_id: current.length === 1 ? current[0] : null, to_team_id: toTeam.id,
+    to_department_id: toTeam.department_id || null, effective_date: isDate(effectiveDate) ? effectiveDate : todayUtc(),
+    task_plan: "keep", note: String(note || "").slice(0, 500) || null, requested_by: actor.user_id,
+  };
+  const approved = await canApprove(actor, row);
+  if (approved) Object.assign(row, { status: "approved", decided_by: actor.user_id, decided_at: new Date().toISOString() });
+  const { data: transfer, error } = await supabase.from("transfers").insert([row]).select().single();
+  if (error) return null;
+  if (approved && row.effective_date <= todayUtc()) await applyTransfer(transfer, actor.user_id);
+  else if (!approved) {
+    const { data: admins } = await supabase.from("company_members").select("user_id")
+      .eq("company_id", companyId).eq("status", "active").in("role", ["owner", "admin"]);
+    const told = new Set([...(admins || []).map((a) => a.user_id), ...(await leadsOf(toTeam.id)), ...(await leadsOf(row.from_team_id))]);
+    const { data: who } = await supabase.from("users").select("name, email").eq("id", userId).single();
+    await notify(actor.user_id, [...told].map((uid) => ({
+      user_id: uid, type: "transfer", link: "/company", message: `${who.name || who.email} was hired into ${toTeam.name} — approve the move`,
+    })));
+  }
+  const { data: fresh } = await supabase.from("transfers").select("*").eq("id", transfer.id).single();
+  return fresh;
+};
+
 // GET /companies/:id/transfers — approvers see everything, others their own
 export const getTransfers = async (req, res) => {
   const member = await memberOr404(req, res);

@@ -54,6 +54,7 @@ import { getAnalytics } from "../controllers/analyticsController.js";
 import { getPortfolios, getPortfolio, createPortfolio, updatePortfolio, deletePortfolio } from "../controllers/planningController.js";
 import { getCompanyAiUsage } from "../controllers/aiController.js";
 import { getForms, getForm, createForm, updateForm, deleteForm, submitForm, getSubmissions } from "../controllers/workflowController.js";
+import { getJobs, getJob, createJob, updateJob, deleteJob, applyToJob, withdrawApplication, updateApplication, getMyApplications } from "../controllers/jobController.js";
 import {
   getTimeOff,
   requestTimeOff,
@@ -145,5 +146,16 @@ router.put("/:id/forms/:formId", authenticate, updateForm);
 router.delete("/:id/forms/:formId", authenticate, deleteForm);
 router.post("/:id/forms/:formId/submit", authenticate, submitForm);
 router.get("/:id/forms/:formId/submissions", authenticate, getSubmissions);
+
+// Internal job board (applications are confidential to the applicant and the hiring side)
+router.get("/:id/jobs", authenticate, getJobs);
+router.post("/:id/jobs", authenticate, createJob);
+router.get("/:id/jobs/:jobId", authenticate, getJob);
+router.put("/:id/jobs/:jobId", authenticate, updateJob);
+router.delete("/:id/jobs/:jobId", authenticate, deleteJob);
+router.post("/:id/jobs/:jobId/apply", authenticate, applyToJob);
+router.post("/:id/jobs/:jobId/withdraw", authenticate, withdrawApplication);
+router.put("/:id/applications/:appId", authenticate, updateApplication);
+router.get("/:id/my-applications", authenticate, getMyApplications);
 
 export default router;

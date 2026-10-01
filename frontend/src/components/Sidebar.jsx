@@ -35,6 +35,7 @@ import {
   Timer,
   ClipboardList,
   BadgeCheck,
+  BriefcaseBusiness,
 } from "lucide-react";
 import { useAI } from "../utils/ai";
 
@@ -63,6 +64,7 @@ const companyItems = [
   { icon: Briefcase,  label: "Portfolios",    path: "/portfolios" },
   { icon: ClipboardList, label: "Request forms", path: "/forms" },
   { icon: BadgeCheck, label: "Approvals",     path: "/approvals" },
+  { icon: BriefcaseBusiness, label: "Job board", path: "/jobs" },
   { icon: Scale,      label: "Decisions",     path: "/decisions" },
   { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
   { icon: Plane,      label: "Time off",      path: "/time-off" },

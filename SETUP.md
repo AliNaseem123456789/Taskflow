@@ -43,6 +43,7 @@ Run these once, in order. Each is safe to run again.
 | `backend/sql/016_phaseD2_timeline_portfolios.sql` | project dates, milestones, portfolios |
 | `backend/sql/017_phaseD3_time_tracking.sql` | time entries (timer + manual) |
 | `backend/sql/018_phaseD4_fields_forms_approvals.sql` | custom fields, request forms, approvals |
+| `backend/sql/019_phaseE1_job_board.sql` | internal job board: roles, applications |
 | `backend/sql/security_enable_rls.sql` | **recommended** — read the comment at the top first |
 
 `000_sessions_table.sql` is reference only (that table already exists).
