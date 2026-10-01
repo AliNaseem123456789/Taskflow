@@ -60,6 +60,20 @@ button {
    palette instead of adding dark: classes to every component.
    Light tints (bg-emerald-50 badges etc.) become dark tints, and dark text
    colors (text-emerald-700) become light ones. */
+/* Chart colours (validated pair: light on the white card, dark on the dark card) */
+:root {
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-grid: #eceef1;
+  --viz-axis: #6b7280;
+}
+html.dark {
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-grid: #2a313c;
+  --viz-axis: #9aa3af;
+}
+
 html.dark {
   color-scheme: dark;
 

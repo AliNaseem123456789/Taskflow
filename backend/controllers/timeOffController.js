@@ -210,7 +210,7 @@ export const deleteHoliday = async (req, res) => {
 
 // People whose workload this member may see:
 // admins/viewers everyone; managers their department + reports; others their own teams.
-const workloadPeople = async (member, companyId, teamId) => {
+export const workloadPeople = async (member, companyId, teamId) => {
   const { data: all } = await supabase
     .from("company_members").select("user_id, role, manager_id, department_id, job_title, users!user_id(id, name, email)")
     .eq("company_id", companyId).eq("status", "active").neq("role", "guest");

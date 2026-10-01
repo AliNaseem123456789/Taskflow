@@ -50,6 +50,7 @@ import {
   getOpenWork,
 } from "../controllers/companyLifeController.js";
 import { getCompanyUpdates } from "../controllers/knowledgeController.js";
+import { getAnalytics } from "../controllers/analyticsController.js";
 import {
   getTimeOff,
   requestTimeOff,
@@ -125,5 +126,6 @@ router.get("/:id/holidays", authenticate, getHolidays);
 router.post("/:id/holidays", authenticate, addHoliday);
 router.delete("/:id/holidays/:holidayId", authenticate, deleteHoliday);
 router.get("/:id/workload", authenticate, getWorkload);
+router.get("/:id/analytics", authenticate, getAnalytics);
 
 export default router;

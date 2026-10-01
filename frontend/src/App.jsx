@@ -36,6 +36,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import CompanyPage from "./pages/CompanyPage";
 import ProjectUpdates from "./pages/ProjectUpdates";
 import Decisions from "./pages/Decisions";
+import Analytics from "./pages/Analytics";
 import TimeOff from "./pages/TimeOff";
 import Workload from "./pages/Workload";
 import Wiki from "./pages/Wiki";
@@ -75,6 +76,7 @@ const appRoutes = [
   ["/wiki/:id",        <Wiki />],
   ["/time-off",        <TimeOff />],
   ["/workload",        <Workload />],
+  ["/analytics",       <Analytics />],
 ];
 
 // Send logged-in users away from login/signup

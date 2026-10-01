@@ -28,6 +28,7 @@ import {
   BookOpen,
   Plane,
   Gauge,
+  LineChart as LineChartIcon,
 } from "lucide-react";
 
 const navItems = [
@@ -55,6 +56,7 @@ const companyItems = [
   { icon: BookOpen,   label: "Wiki",          path: "/wiki" },
   { icon: Plane,      label: "Time off",      path: "/time-off" },
   { icon: Gauge,      label: "Workload",      path: "/workload" },
+  { icon: LineChartIcon, label: "Analytics",  path: "/analytics" },
   { icon: Building2,  label: "People & settings", path: "/company" },
 ];
 
