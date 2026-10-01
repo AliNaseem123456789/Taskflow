@@ -24,6 +24,7 @@ const AUTH_ROUTES = [
   "/tasks/",
   "/join",
   "/join-company",
+  "/inbox",
   "/integrations",
   "/company",
   "/companies",

@@ -3,8 +3,10 @@ import { getMembership } from "./teamController.js";
 import { normaliseTasks } from "./taskController.js";
 import { withProgress } from "./goalController.js";
 import { publishToTeam } from "../utils/events.js";
-import { getCompanyMember, taskScope } from "../utils/permissions.js";
+import { getCompanyMember, taskScope, taskAccess } from "../utils/permissions.js";
 import { audit } from "../utils/audit.js";
+import { WORK_TYPES } from "../utils/workTypes.js";
+import { ensureStatuses, columnFor, legacyStatus, CATEGORIES } from "../utils/projectStatuses.js";
 
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
 
@@ -108,13 +110,16 @@ export const createProject = async (req, res) => {
   const { fields, error: invalid } = readProject(req.body);
   if (invalid) return res.status(400).json({ error: invalid });
 
-  const { data: team } = await supabase.from("teams").select("company_id").eq("id", id).single();
+  const { data: team } = await supabase.from("teams").select("company_id, companies(work_type)").eq("id", id).single();
+  // columns come from the kind of work: the one picked for this project, else the company's
+  const workType = WORK_TYPES[req.body.work_type] ? req.body.work_type : team.companies?.work_type || "general";
   const { data, error } = await supabase
     .from("projects")
-    .insert([{ ...fields, team_id: id, company_id: team.company_id, created_by: req.user.id }])
+    .insert([{ ...fields, work_type: workType, team_id: id, company_id: team.company_id, created_by: req.user.id }])
     .select("*")
     .single();
   if (error) return res.status(500).json({ error: error.message });
+  await ensureStatuses(data.id); // board columns from the company's kind of work
   await audit(req, team.company_id, "project.created", "project", data.id, { name: data.name });
   res.status(201).json({ ...data, total: 0, done: 0 });
   publishToTeam(id, "project", {});
@@ -163,6 +168,137 @@ export const getProjectTasks = async (req, res) => {
     .order("date_logged", { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json(normaliseTasks(data).map((t) => ({ ...t, owner: t.assignee || t.creator })));
+};
+
+// ── Project board: columns and cards ────────────────────────────────────────
+
+const projectInTeam = async (teamId, projectId) => {
+  const { data } = await supabase
+    .from("projects").select("id, name, color, team_id, company_id").eq("id", projectId).eq("team_id", teamId).maybeSingle();
+  return data;
+};
+
+// GET /teams/:id/projects/:projectId/board -> { statuses, tasks, can_edit_columns }
+// Anyone who can use the project (team, managers, people added to it, guests on it).
+export const getProjectBoard = async (req, res) => {
+  const { id, projectId } = req.params;
+  const project = await projectInTeam(id, projectId);
+  if (!project || !(await canUseProject(req.user.id, projectId))) return res.status(404).json({ error: "Project not found" });
+
+  const statuses = await ensureStatuses(projectId);
+  const doneIds = statuses.filter((s) => s.category === "done").map((s) => s.id);
+  const { data: tasks, error } = await supabase
+    .from("tasks")
+    .select("id, title, status, status_id, priority, due_date, date_logged, position, user_id, assignee_id, reviewer_id, company_id, team_id, project_id, completed_at, assignee:users!assignee_id(id, name, email)")
+    .eq("project_id", projectId).is("parent_task_id", null)
+    .order("position").order("id");
+  if (error) return res.status(500).json({ error: error.message });
+
+  const ids = tasks.map((t) => t.id);
+  const [{ data: subs }, { data: items }, { data: deps }] = ids.length
+    ? await Promise.all([
+        supabase.from("tasks").select("parent_task_id, status").in("parent_task_id", ids),
+        supabase.from("task_checklist_items").select("task_id, done").in("task_id", ids),
+        supabase.from("task_dependencies").select("task_id, blocker:tasks!blocked_by_id(status)").in("task_id", ids),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }];
+
+  const membership = await getMembership(id, req.user.id);
+  const cutoff = Date.now() - 14 * 86400000; // finished cards stay on the board for two weeks
+  res.json({
+    project,
+    statuses,
+    can_edit_columns: membership?.role === "admin",
+    tasks: tasks
+      .map((t) => {
+        const col = columnFor(t, statuses);
+        const mySubs = (subs || []).filter((x) => x.parent_task_id === t.id);
+        const myItems = (items || []).filter((x) => x.task_id === t.id);
+        return {
+          ...t,
+          column_id: col?.id,
+          subtasks: { total: mySubs.length, done: mySubs.filter((x) => x.status === "Done").length },
+          checklist: { total: myItems.length, done: myItems.filter((x) => x.done).length },
+          blocked: (deps || []).some((d) => d.task_id === t.id && d.blocker && d.blocker.status !== "Done"),
+        };
+      })
+      .filter((t) => !doneIds.includes(t.column_id) || !t.completed_at || new Date(t.completed_at).getTime() > cutoff),
+  });
+};
+
+// PUT /teams/:id/projects/:projectId/board/move { status_id, ids: [taskId, ...] }
+// The cards of one column in their new order (cards you can't edit are skipped).
+export const moveOnBoard = async (req, res) => {
+  const { id, projectId } = req.params;
+  const project = await projectInTeam(id, projectId);
+  if (!project || !(await canUseProject(req.user.id, projectId))) return res.status(404).json({ error: "Project not found" });
+  const { status_id: statusId, ids } = req.body;
+  if (!Array.isArray(ids) || ids.length > 500) return res.status(400).json({ error: "ids are required" });
+  const statuses = await ensureStatuses(projectId);
+  const col = statuses.find((s) => s.id === statusId);
+  if (!col) return res.status(400).json({ error: "That column isn't in this project" });
+
+  const { data: rows } = await supabase.from("tasks").select("*").eq("project_id", projectId).in("id", ids.map(Number));
+  let updated = 0;
+  for (const row of rows || []) {
+    if (!(await taskAccess(row, req.user.id)).canEdit) continue;
+    const position = ids.map(Number).indexOf(row.id);
+    const changes = { position, updated_at: new Date().toISOString() };
+    if (row.status_id !== col.id) Object.assign(changes, { status_id: col.id, status: legacyStatus(col.category) });
+    await supabase.from("tasks").update(changes).eq("id", row.id);
+    updated++;
+  }
+  res.json({ success: true, updated });
+  publishToTeam(id, "task", {});
+};
+
+// PUT /teams/:id/projects/:projectId/statuses { statuses: [{ id?, name, category, color }] } — lead/admin
+// Saves the whole list in order. A removed column's cards move to the first column of the same kind.
+export const saveProjectStatuses = async (req, res) => {
+  const { id, projectId } = req.params;
+  const membership = await getMembership(id, req.user.id);
+  if (membership?.role !== "admin") return res.status(403).json({ error: "Only the team lead or an admin edits columns" });
+  const project = await projectInTeam(id, projectId);
+  if (!project) return res.status(404).json({ error: "Project not found" });
+
+  const list = req.body.statuses;
+  if (!Array.isArray(list) || !list.length || list.length > 12) return res.status(400).json({ error: "Between 1 and 12 columns" });
+  const clean = [];
+  for (const s of list) {
+    const name = String(s?.name || "").trim().slice(0, 40);
+    if (!name) return res.status(400).json({ error: "Every column needs a name" });
+    if (!CATEGORIES.includes(s.category)) return res.status(400).json({ error: "Column kind must be todo, in_progress or done" });
+    clean.push({ id: s.id || null, name, category: s.category, color: COLOR_RE.test(s.color || "") ? s.color : "#6b7280" });
+  }
+  if (!clean.some((s) => s.category === "done")) return res.status(400).json({ error: "Keep at least one Done column" });
+
+  const current = await ensureStatuses(projectId);
+  const keepIds = new Set(clean.filter((s) => s.id).map((s) => s.id));
+  for (const s of clean) if (s.id && !current.some((c) => c.id === s.id)) return res.status(400).json({ error: "Unknown column" });
+
+  const saved = [];
+  for (const [position, s] of clean.entries()) {
+    const row = { name: s.name, category: s.category, color: s.color, position };
+    const { data } = s.id
+      ? await supabase.from("project_statuses").update(row).eq("id", s.id).select().single()
+      : await supabase.from("project_statuses").insert([{ ...row, project_id: projectId }]).select().single();
+    saved.push(data);
+  }
+  // cards in removed columns move to the first remaining column of the same kind
+  for (const gone of current.filter((c) => !keepIds.has(c.id))) {
+    const target = saved.find((s) => s.category === gone.category) || saved[0];
+    await supabase.from("tasks").update({ status_id: target.id, status: legacyStatus(target.category) }).eq("status_id", gone.id);
+    await supabase.from("project_statuses").delete().eq("id", gone.id);
+  }
+  // a column whose kind changed: keep its cards' plain status in step
+  for (const s of saved) {
+    const before = current.find((c) => c.id === s.id);
+    if (before && before.category !== s.category)
+      await supabase.from("tasks").update({ status: legacyStatus(s.category) }).eq("status_id", s.id);
+  }
+  await audit(req, project.company_id, "project.columns_changed", "project", projectId, { columns: saved.map((s) => s.name) });
+  res.json(saved);
+  publishToTeam(id, "project", {});
 };
 
 // ── People on a project (guests, and people from outside the team) ─────────

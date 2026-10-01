@@ -17,6 +17,16 @@ import {
   toggleReaction,
   getMentionable,
 } from "../controllers/commentController.js";
+import {
+  getInbox,
+  addChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
+  addDependency,
+  removeDependency,
+  addWatcher,
+  removeWatcher,
+} from "../controllers/taskDetailController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -30,6 +40,7 @@ router.get("/search", auth, searchTasks);
 router.get("/streak", auth, getStreak);
 router.get("/heatmap", auth, getHeatmap);
 router.put("/reorder", auth, reorderTasks);
+router.get("/inbox", auth, getInbox);
 
 // Task CRUD
 router.get("/", auth, getTasks);
@@ -44,5 +55,14 @@ router.post("/:taskId/comments", auth, addComment);
 router.get("/:taskId/mentionable", auth, getMentionable);
 router.delete("/comments/:commentId", auth, deleteComment);
 router.post("/:taskId/react", auth, toggleReaction);
+
+// Inside a task: checklist, "blocked by" links, watchers
+router.post("/:id/checklist", auth, addChecklistItem);
+router.put("/:id/checklist/:itemId", auth, updateChecklistItem);
+router.delete("/:id/checklist/:itemId", auth, deleteChecklistItem);
+router.post("/:id/dependencies", auth, addDependency);
+router.delete("/:id/dependencies/:blockerId", auth, removeDependency);
+router.post("/:id/watchers", auth, addWatcher);
+router.delete("/:id/watchers/:userId", auth, removeWatcher);
 
 export default router;

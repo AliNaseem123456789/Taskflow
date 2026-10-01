@@ -13,7 +13,8 @@ export async function apiRequest(endpoint, method = "GET", body = null, options 
       url: endpoint,
       method,
       data: body ?? undefined,
-      headers: options.personal ? { "X-Company-Id": "" } : undefined,
+      // personal: force the Personal workspace; company: act in that company (e.g. a task opened from the inbox)
+      headers: options.personal ? { "X-Company-Id": "" } : options.company ? { "X-Company-Id": options.company } : undefined,
     });
     return res.data;
   } catch (err) {

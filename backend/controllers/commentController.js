@@ -12,7 +12,7 @@ const plainText = (text) => text.replace(MENTION_RE, "@$1");
 // Personal task: just its creator. Company task: people whose role reaches it.
 export async function peopleWhoCanSee(taskId) {
   const { data: task } = await supabase
-    .from("tasks").select("id, user_id, assignee_id, company_id, team_id, project_id").eq("id", taskId).maybeSingle();
+    .from("tasks").select("id, user_id, assignee_id, reviewer_id, company_id, team_id, project_id").eq("id", taskId).maybeSingle();
   if (!task) return [];
 
   let userIds = [task.user_id];
@@ -35,7 +35,7 @@ export async function peopleWhoCanSee(taskId) {
     userIds = (members || [])
       .filter((m) =>
         ["owner", "admin", "viewer"].includes(m.role) ||
-        m.user_id === task.user_id || m.user_id === task.assignee_id ||
+        m.user_id === task.user_id || m.user_id === task.assignee_id || m.user_id === task.reviewer_id ||
         onTeam.has(m.user_id) || onProject.has(m.user_id) ||
         (m.role === "manager" && (!m.department_id || m.department_id === team?.department_id)) ||
         (openProject && ["member", "manager"].includes(m.role))
@@ -108,6 +108,14 @@ export const addComment = async (req, res) => {
         user_id: owner.id, type: "comment", task_id: Number(taskId), link,
         message: `${author} commented on your task: "${snippet}"`,
       });
+    // watchers (who can still see it) hear about new comments too
+    const { data: watchers } = await supabase.from("task_watchers").select("user_id").eq("task_id", taskId);
+    for (const w of watchers || [])
+      if (canSee.has(w.user_id) && !items.some((i) => i.user_id === w.user_id))
+        items.push({
+          user_id: w.user_id, type: "comment", task_id: Number(taskId), link,
+          message: `${author} commented on a task you watch: "${snippet}"`,
+        });
     await notify(req.user.id, items);
     sendTo([...canSee], "comment", { task_id: Number(taskId) });
   } catch (e) {

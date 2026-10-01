@@ -2,6 +2,9 @@ import { supabase } from "../config/supabase.js";
 import { todayIn, dayNumber, monthRange, addDays } from "../utils/time.js";
 import { sendTo, publishToTeam } from "../utils/events.js";
 import { syncTaskToGoogle } from "./integrationController.js";
+import { notify } from "./notificationController.js";
+import { taskExtras } from "./taskDetailController.js";
+import { ensureStatuses, legacyStatus, statusIdForLegacy } from "../utils/projectStatuses.js";
 import {
   can,
   getCompanyMember,
@@ -24,7 +27,7 @@ const announce = (task, action) => {
 // (users is joined twice, so each join names its column.)
 const TASK_SELECT =
   "*, projects(id, name, color), task_tags(tags(id, name, color)), task_reactions(user_id, emoji), " +
-  "creator:users!user_id(id, name, email), assignee:users!assignee_id(id, name, email)";
+  "creator:users!user_id(id, name, email), assignee:users!assignee_id(id, name, email), reviewer:users!reviewer_id(id, name, email)";
 
 export const normaliseTasks = (data) =>
   data.map((t) => ({
@@ -78,10 +81,15 @@ const readTaskFields = (body, { requireTitle = false } = {}) => {
     if (!isDate(body.date_logged)) return { error: "Invalid date" };
     fields.date_logged = body.date_logged;
   }
-  for (const key of ["project_id", "team_id", "assignee_id"]) {
+  for (const key of ["project_id", "team_id", "assignee_id", "reviewer_id", "status_id"]) {
     if (body[key] === undefined) continue;
     if (body[key] && !isUuid(String(body[key]))) return { error: `Invalid ${key}` };
     fields[key] = body[key] || null;
+  }
+  if (body.parent_task_id !== undefined) {
+    const parent = body.parent_task_id;
+    if (parent !== null && parent !== "" && !/^\d+$/.test(String(parent))) return { error: "Invalid parent task" };
+    fields.parent_task_id = parent ? Number(parent) : null;
   }
   if (body.blocker !== undefined) {
     const b = String(body.blocker || "").trim();
@@ -112,18 +120,54 @@ const checkPlacement = async (fields, member, existing = null) => {
 
   if (member.role === "guest" && !projectId) return "Guests can only add tasks to projects shared with them";
 
-  if (fields.assignee_id) {
-    const a = await getCompanyMember(companyId, fields.assignee_id);
-    if (!a) return "The assignee isn't in this company";
-    if (a.role === "viewer") return "Viewers can't be assigned tasks";
+  for (const [key, label] of [["assignee_id", "assignee"], ["reviewer_id", "reviewer"]]) {
+    if (!fields[key]) continue;
+    const a = await getCompanyMember(companyId, fields[key]);
+    if (!a) return `The ${label} isn't in this company`;
+    if (a.role === "viewer") return `Viewers can't be the ${label}`;
     if (a.role === "guest") {
       const { data: pm } = projectId
         ? await supabase.from("project_members").select("id").eq("project_id", projectId).eq("user_id", a.user_id).maybeSingle()
         : { data: null };
-      if (!pm) return "Guests can only be assigned tasks in projects shared with them";
+      if (!pm) return `Guests can only be the ${label} in projects shared with them`;
     }
   }
+
+  // board column: must be one of the project's columns; it decides the plain status
+  const projectChanged = fields.project_id !== undefined && fields.project_id !== (existing?.project_id ?? null);
+  if (fields.status_id) {
+    if (!projectId) return "Only project tasks have columns";
+    const { data: col } = await supabase
+      .from("project_statuses").select("id, category").eq("id", fields.status_id).eq("project_id", projectId).maybeSingle();
+    if (!col) return "That column isn't in this project";
+    fields.status = legacyStatus(col.category);
+  } else if (projectChanged) {
+    fields.status_id = null; // lands in the column matching its status
+  } else if (fields.status && projectId && existing) {
+    const keep = statusIdForLegacy(fields.status, existing.status_id, await ensureStatuses(projectId));
+    if (keep !== undefined) fields.status_id = keep;
+  }
   return null;
+};
+
+// Tell people about who's now on a task, and about it being finished
+const notifyChanges = async (actorId, task, before = {}) => {
+  const items = [];
+  const link = `/tasks/${task.id}`;
+  if (task.assignee_id && task.assignee_id !== before.assignee_id)
+    items.push({ user_id: task.assignee_id, type: "assigned", task_id: task.id, link, message: `You were assigned "${task.title}"` });
+  if (task.reviewer_id && task.reviewer_id !== before.reviewer_id)
+    items.push({ user_id: task.reviewer_id, type: "review", task_id: task.id, link, message: `You're the reviewer on "${task.title}"` });
+  if (task.status === "Done" && before.status && before.status !== "Done") {
+    const { data: watchers } = await supabase.from("task_watchers").select("user_id").eq("task_id", task.id);
+    const told = new Set(items.map((i) => i.user_id));
+    for (const uid of [task.user_id, task.reviewer_id, ...(watchers || []).map((w) => w.user_id)])
+      if (uid && !told.has(uid)) {
+        told.add(uid);
+        items.push({ user_id: uid, type: "done", task_id: task.id, link, message: `"${task.title}" is done` });
+      }
+  }
+  if (items.length) await notify(actorId, items);
 };
 
 // Only tag ids that belong to this user
@@ -173,6 +217,7 @@ export const getTasks = async (req, res) => {
     if (team_id && isUuid(team_id)) query = query.eq("team_id", team_id);
     if (project_id && isUuid(project_id)) query = query.eq("project_id", project_id);
     if (assignee) query = query.eq("assignee_id", assignee === "me" ? req.user.id : assignee);
+    if (req.query.top) query = query.is("parent_task_id", null);
 
     const { data, error } = await query.order("date_logged", { ascending: true });
     if (error) throw error;
@@ -198,6 +243,7 @@ export const getTask = async (req, res) => {
     }
     res.json({
       ...task,
+      ...(await taskExtras(task, req.user.id)),
       owner: task.creator, // older pages read `owner`
       company,
       permissions: {
@@ -315,6 +361,17 @@ export const addTask = async (req, res) => {
   const { fields, error: invalid } = readTaskFields(req.body, { requireTitle: true });
   if (invalid) return res.status(400).json({ error: invalid });
 
+  // subtask: lives where its parent lives
+  if (fields.parent_task_id) {
+    const { data: parent } = await supabase.from("tasks").select("*").eq("id", fields.parent_task_id).maybeSingle();
+    if (!(await taskAccess(parent, req.user.id)).canView) return res.status(400).json({ error: "Parent task not found" });
+    if (parent.parent_task_id) return res.status(400).json({ error: "Subtasks can't have their own subtasks" });
+    if ((parent.company_id || null) !== (req.company?.id || null))
+      return res.status(400).json({ error: "Switch to the parent task's workspace first" });
+    fields.team_id = parent.team_id;
+    fields.project_id = parent.project_id;
+  }
+
   if (req.company) {
     const member = req.company.member;
     if (!can(member, "task.create")) return res.status(403).json({ error: "Viewers can't add tasks" });
@@ -329,6 +386,8 @@ export const addTask = async (req, res) => {
       return res.status(400).json({ error: "Projects and teams belong to a company — switch to that company first" });
     if (fields.assignee_id && fields.assignee_id !== req.user.id)
       return res.status(400).json({ error: "Personal tasks can't be assigned to others" });
+    if (fields.reviewer_id || fields.status_id)
+      return res.status(400).json({ error: "Reviewers and columns are for company tasks" });
     delete fields.assignee_id;
   }
 
@@ -355,6 +414,7 @@ export const addTask = async (req, res) => {
 
     res.status(201).json(await loadTask(data.id));
     announce(data, "created");
+    if (data.company_id) notifyChanges(req.user.id, data).catch(() => {});
     syncTaskToGoogle(req.user.id, data).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -371,16 +431,26 @@ export const updateTask = async (req, res) => {
   const access = await taskAccess(existing, req.user.id);
   if (!access.canView) return res.status(404).json({ error: "Task not found" });
   if (!access.canEdit) return res.status(403).json({ error: "You can't edit this task" });
+  if (fields.parent_task_id !== undefined && fields.parent_task_id !== existing.parent_task_id)
+    return res.status(400).json({ error: "A task can't move to another parent" });
+  delete fields.parent_task_id;
+  // subtasks stay on their parent's team and project
+  if (existing.parent_task_id && (fields.project_id !== undefined || fields.team_id !== undefined)) {
+    delete fields.project_id;
+    delete fields.team_id;
+  }
 
   if (existing.company_id) {
+    if (fields.reviewer_id !== undefined && fields.reviewer_id !== existing.reviewer_id && !access.canAssign)
+      return res.status(403).json({ error: "You can't change the reviewer" });
     if (fields.assignee_id !== undefined && fields.assignee_id !== existing.assignee_id) {
       if (!access.canAssign) return res.status(403).json({ error: "You can't reassign this task" });
       if (!fields.assignee_id) return res.status(400).json({ error: "A company task needs an assignee" });
     }
     const problem = await checkPlacement(fields, access.member, existing);
     if (problem) return res.status(400).json({ error: problem });
-  } else if (fields.project_id || fields.team_id || (fields.assignee_id && fields.assignee_id !== req.user.id)) {
-    return res.status(400).json({ error: "Personal tasks can't have a team, project or other assignee" });
+  } else if (fields.project_id || fields.team_id || fields.reviewer_id || fields.status_id || (fields.assignee_id && fields.assignee_id !== req.user.id)) {
+    return res.status(400).json({ error: "Personal tasks can't have a team, project, reviewer or other assignee" });
   }
 
   try {
@@ -406,6 +476,7 @@ export const updateTask = async (req, res) => {
     res.json(await loadTask(data.id));
     announce(data, "updated");
     syncTaskToGoogle(data.user_id, data).catch(() => {});
+    if (data.company_id) notifyChanges(req.user.id, data, existing).catch(() => {});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -425,15 +496,22 @@ export const reorderTasks = async (req, res) => {
     const editable = new Set();
     for (const row of rows || []) if ((await taskAccess(row, req.user.id)).canEdit) editable.add(row.id);
 
+    // project tasks also move to a matching board column
+    const columns = {};
+    for (const row of rows || [])
+      if (editable.has(row.id) && row.project_id && !columns[row.project_id])
+        columns[row.project_id] = await ensureStatuses(row.project_id);
     await Promise.all(
-      ids.map((id, index) =>
-        editable.has(Number(id))
-          ? supabase
-              .from("tasks")
-              .update({ status, position: index, updated_at: new Date().toISOString() })
-              .eq("id", id)
-          : null
-      )
+      ids.map((id, index) => {
+        if (!editable.has(Number(id))) return null;
+        const row = rows.find((r) => r.id === Number(id));
+        const update = { status, position: index, updated_at: new Date().toISOString() };
+        if (row.project_id) {
+          const col = statusIdForLegacy(status, row.status_id, columns[row.project_id]);
+          if (col !== undefined) update.status_id = col;
+        }
+        return supabase.from("tasks").update(update).eq("id", id);
+      })
     );
     res.json({ success: true, updated: editable.size });
     (rows || []).filter((r) => editable.has(r.id)).slice(0, 1).forEach((r) => announce(r, "updated"));

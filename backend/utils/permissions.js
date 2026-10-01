@@ -106,7 +106,7 @@ export const taskScope = async (member) => {
 
 // PostgREST filter for "tasks this member can see" (use with query.or(...))
 export const scopeFilter = (scope, userId) => {
-  const parts = [`user_id.eq.${userId}`, `assignee_id.eq.${userId}`];
+  const parts = [`user_id.eq.${userId}`, `assignee_id.eq.${userId}`, `reviewer_id.eq.${userId}`];
   if (scope.teamIds?.length) parts.push(`team_id.in.(${scope.teamIds.join(",")})`);
   if (scope.projectIds?.length) parts.push(`project_id.in.(${scope.projectIds.join(",")})`);
   return parts.join(",");
@@ -117,6 +117,7 @@ export const scopeAllows = (scope, task, userId) =>
   scope.all ||
   task.user_id === userId ||
   task.assignee_id === userId ||
+  task.reviewer_id === userId ||
   (task.team_id && scope.teamIds.includes(task.team_id)) ||
   (task.project_id && scope.projectIds.includes(task.project_id));
 
@@ -129,7 +130,7 @@ export const myWorkFilter = (userId) => `and(user_id.eq.${userId},company_id.is.
 export const taskAccess = async (task, userId) => {
   const none = { canView: false, canEdit: false, canDelete: false, canAssign: false, canComment: false, member: null };
   if (!task) return none;
-  const involved = task.user_id === userId || task.assignee_id === userId;
+  const involved = task.user_id === userId || task.assignee_id === userId || task.reviewer_id === userId;
 
   // personal task: creator only (the assignee is always the creator there)
   if (!task.company_id) {

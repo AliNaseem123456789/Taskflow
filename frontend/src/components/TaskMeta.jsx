@@ -16,6 +16,18 @@ export default function TaskMeta({ task, showBlocker = true }) {
         → {task.assignee.name || task.assignee.email}
       </span>
     );
+  if (task.company_id && task.reviewer)
+    chips.push(
+      <span key="rv" className="text-[10px] text-gray-500" title="Reviewer">
+        review: {task.reviewer.name || task.reviewer.email}
+      </span>
+    );
+  if (task.parent_task_id)
+    chips.push(
+      <span key="sub" className="text-[10px] text-gray-400" title="Part of a bigger task">
+        subtask
+      </span>
+    );
   if (task.project)
     chips.push(
       <span key="proj" className="flex items-center gap-1 text-[10px] text-gray-600" title="Team project">

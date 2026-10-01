@@ -20,10 +20,12 @@ import {
   Target,
   Plug,
   Building2,
+  Inbox,
 } from "lucide-react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard",  path: "/dashboard" },
+  { icon: Inbox,           label: "Inbox",      path: "/inbox"     },
   { icon: CheckSquare,     label: "My Dones",   path: "/mydones"   },
   { icon: Columns3,        label: "Board",      path: "/board"     },
   { icon: Calendar,        label: "Calendar",   path: "/calendar"  },

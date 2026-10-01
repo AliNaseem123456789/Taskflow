@@ -16,7 +16,10 @@ const STATUS = {
 function TaskRow({ task, onStatusChange, onDelete, onUpdate, defaultShowComments }) {
   const userId = getStoredUser()?.id;
   // creator or assignee may edit from lists; the server has the final say
-  const isMine = !task.user_id || task.user_id === userId || task.assignee_id === userId;
+  // the task page sends the server's verdict; lists fall back to "mine or assigned to me"
+  const isMine = task.permissions
+    ? task.permissions.canEdit
+    : !task.user_id || task.user_id === userId || task.assignee_id === userId;
   const [showComments, setShowComments] = useState(!!defaultShowComments);
   const [editing, setEditing] = useState(false);
   const [liked, setLiked] = useState(() => !!task.reactions?.some((r) => r.user_id === userId));

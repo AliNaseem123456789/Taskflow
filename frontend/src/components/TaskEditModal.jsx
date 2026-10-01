@@ -24,6 +24,7 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     project_id: task.project_id || "",
     team_id: task.team_id || "",
     assignee_id: task.assignee_id || "",
+    reviewer_id: task.reviewer_id || "",
   });
   const { members, teams } = useCompanyPeople();
   const isCompanyTask = !!task.company_id;
@@ -57,10 +58,10 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      const { team_id, assignee_id, ...rest } = form;
+      const { team_id, assignee_id, reviewer_id, ...rest } = form;
       const updated = await apiRequest(`/tasks/${task.id}`, "PUT", {
         ...rest,
-        ...(isCompanyTask ? { team_id: form.project_id ? undefined : team_id, assignee_id } : {}),
+        ...(isCompanyTask ? { team_id: form.project_id ? undefined : team_id, assignee_id, reviewer_id: reviewer_id || null } : {}),
         tags: tags.map((t) => t.id),
       });
       onSaved(updated);
@@ -139,6 +140,16 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
                 <select className={inputCls} value={form.assignee_id} onChange={set("assignee_id")}>
                   {!members.some((m) => m.id === form.assignee_id) && task.assignee && (
                     <option value={form.assignee_id}>{task.assignee.name || task.assignee.email}</option>
+                  )}
+                  {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Reviewer</label>
+                <select className={inputCls} value={form.reviewer_id} onChange={set("reviewer_id")}>
+                  <option value="">No reviewer</option>
+                  {!members.some((m) => m.id === form.reviewer_id) && task.reviewer && (
+                    <option value={form.reviewer_id}>{task.reviewer.name || task.reviewer.email}</option>
                   )}
                   {members.map((m) => <option key={m.id} value={m.id}>{m.name || m.email}</option>)}
                 </select>
