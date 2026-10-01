@@ -19,6 +19,8 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
     status: task.status || "Doing",
     priority: task.priority || "medium",
     due_date: task.due_date || "",
+    start_date: task.start_date || "",
+    estimate: task.estimate ?? "",
     date_logged: task.date_logged || "",
     blocker: task.blocker || "",
     recurrence: task.recurrence || "",
@@ -63,6 +65,7 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
       const updated = await apiRequest(`/tasks/${task.id}`, "PUT", {
         ...rest,
         ...(isCompanyTask ? { team_id: form.project_id ? undefined : team_id, assignee_id, reviewer_id: reviewer_id || null } : {}),
+        estimate: form.estimate === "" ? null : Number(form.estimate),
         tags: tags.map((t) => t.id),
       });
       onSaved(updated);
@@ -117,6 +120,14 @@ export default function TaskEditModal({ task, onClose, onSaved }) {
             <div>
               <label className={labelCls}>Due date</label>
               <input type="date" className={inputCls} value={form.due_date} onChange={set("due_date")} />
+            </div>
+            <div>
+              <label className={labelCls}>Starts on <span className="font-normal text-gray-400">(timeline)</span></label>
+              <input type="date" className={inputCls} value={form.start_date} onChange={set("start_date")} />
+            </div>
+            <div>
+              <label className={labelCls}>Estimate <span className="font-normal text-gray-400">(points or hours)</span></label>
+              <input type="number" min="0" step="0.5" className={inputCls} value={form.estimate} onChange={set("estimate")} />
             </div>
           </div>
           <div>

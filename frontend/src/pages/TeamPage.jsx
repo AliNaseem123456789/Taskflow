@@ -8,11 +8,13 @@ import TaskMeta from "../components/TaskMeta";
 import StandupTab from "../components/team/StandupTab";
 import ProjectsTab from "../components/team/ProjectsTab";
 import TeamGoalsTab from "../components/team/TeamGoalsTab";
+import SprintsTab from "../components/team/SprintsTab";
 
 const TABS = [
   ["feed", "Feed"],
   ["standup", "Standup"],
   ["projects", "Projects"],
+  ["sprints", "Sprints"],
   ["goals", "Goals"],
 ];
 
@@ -379,6 +381,7 @@ export default function TeamPage() {
       {tab === "standup" && <StandupTab team={activeTeam} date={date} />}
       {tab === "projects" && <ProjectsTab team={activeTeam} />}
       {tab === "goals" && <TeamGoalsTab team={activeTeam} />}
+      {tab === "sprints" && <SprintsTab team={activeTeam} />}
 
       {/* Feed */}
       {tab !== "feed" ? null : feedLoading ? (

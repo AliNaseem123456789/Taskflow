@@ -39,6 +39,19 @@ import {
 import { getStandups, getStandupDraft, saveStandup } from "../controllers/standupController.js";
 import { setTeamSlack } from "../controllers/integrationController.js";
 import { getProjectUpdates, postProjectUpdate } from "../controllers/knowledgeController.js";
+import {
+  getSprints,
+  getSprint,
+  getBacklog,
+  getVelocity,
+  createSprint,
+  updateSprint,
+  deleteSprint,
+  planSprint,
+  startSprint,
+  closeSprint,
+  updateSprintSettings,
+} from "../controllers/sprintController.js";
 import { authenticate } from "../middleware/auth.js";
 import { workspace } from "../middleware/workspace.js";
 
@@ -86,6 +99,19 @@ router.get("/:id/projects/:projectId/board", auth, getProjectBoard);
 router.put("/:id/projects/:projectId/board/move", auth, moveOnBoard);
 router.put("/:id/projects/:projectId/statuses", auth, saveProjectStatuses);
 router.get("/:id/projects/:projectId/updates", auth, getProjectUpdates);
+
+// Sprints
+router.get("/:id/sprints", auth, getSprints);
+router.post("/:id/sprints", auth, createSprint);
+router.get("/:id/sprints/:sprintId", auth, getSprint);
+router.put("/:id/sprints/:sprintId", auth, updateSprint);
+router.delete("/:id/sprints/:sprintId", auth, deleteSprint);
+router.put("/:id/sprints/:sprintId/tasks", auth, planSprint);
+router.post("/:id/sprints/:sprintId/start", auth, startSprint);
+router.post("/:id/sprints/:sprintId/close", auth, closeSprint);
+router.get("/:id/backlog", auth, getBacklog);
+router.get("/:id/velocity", auth, getVelocity);
+router.put("/:id/sprint-settings", auth, updateSprintSettings);
 router.post("/:id/projects/:projectId/updates", auth, postProjectUpdate);
 router.post("/:id/projects/:projectId/members", auth, addProjectMember);
 router.delete("/:id/projects/:projectId/members/:userId", auth, removeProjectMember);

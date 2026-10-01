@@ -81,7 +81,16 @@ const readTaskFields = (body, { requireTitle = false } = {}) => {
     if (!isDate(body.date_logged)) return { error: "Invalid date" };
     fields.date_logged = body.date_logged;
   }
-  for (const key of ["project_id", "team_id", "assignee_id", "reviewer_id", "status_id"]) {
+  if (body.estimate !== undefined) {
+    const e = body.estimate === null || body.estimate === "" ? null : Number(body.estimate);
+    if (e !== null && !(e >= 0 && e <= 10000)) return { error: "Estimate must be a number from 0 to 10000" };
+    fields.estimate = e === null ? null : Math.round(e * 10) / 10;
+  }
+  if (body.start_date !== undefined) {
+    if (body.start_date && !isDate(body.start_date)) return { error: "Invalid start date" };
+    fields.start_date = body.start_date || null;
+  }
+  for (const key of ["project_id", "team_id", "assignee_id", "reviewer_id", "status_id", "sprint_id"]) {
     if (body[key] === undefined) continue;
     if (body[key] && !isUuid(String(body[key]))) return { error: `Invalid ${key}` };
     fields[key] = body[key] || null;
@@ -131,6 +140,16 @@ const checkPlacement = async (fields, member, existing = null) => {
         : { data: null };
       if (!pm) return `Guests can only be the ${label} in projects shared with them`;
     }
+  }
+
+  // sprint: an open sprint of the task's team
+  if (fields.sprint_id) {
+    const teamId = fields.team_id !== undefined ? fields.team_id : existing?.team_id;
+    const { data: sp } = await supabase.from("sprints").select("id, team_id, status").eq("id", fields.sprint_id).maybeSingle();
+    if (!sp || sp.team_id !== teamId) return "That sprint belongs to another team";
+    if (sp.status === "closed") return "That sprint is closed";
+  } else if (fields.team_id !== undefined && existing?.sprint_id && fields.team_id !== existing.team_id) {
+    fields.sprint_id = null; // moved to another team: leaves the old team's sprint
   }
 
   // board column: must be one of the project's columns; it decides the plain status
@@ -218,6 +237,7 @@ export const getTasks = async (req, res) => {
     if (project_id && isUuid(project_id)) query = query.eq("project_id", project_id);
     if (assignee) query = query.eq("assignee_id", assignee === "me" ? req.user.id : assignee);
     if (req.query.top) query = query.is("parent_task_id", null);
+    if (req.query.sprint_id && isUuid(req.query.sprint_id)) query = query.eq("sprint_id", req.query.sprint_id);
 
     const { data, error } = await query.order("date_logged", { ascending: true });
     if (error) throw error;
@@ -386,8 +406,8 @@ export const addTask = async (req, res) => {
       return res.status(400).json({ error: "Projects and teams belong to a company — switch to that company first" });
     if (fields.assignee_id && fields.assignee_id !== req.user.id)
       return res.status(400).json({ error: "Personal tasks can't be assigned to others" });
-    if (fields.reviewer_id || fields.status_id)
-      return res.status(400).json({ error: "Reviewers and columns are for company tasks" });
+    if (fields.reviewer_id || fields.status_id || fields.sprint_id)
+      return res.status(400).json({ error: "Reviewers, columns and sprints are for company tasks" });
     delete fields.assignee_id;
   }
 
@@ -449,7 +469,7 @@ export const updateTask = async (req, res) => {
     }
     const problem = await checkPlacement(fields, access.member, existing);
     if (problem) return res.status(400).json({ error: problem });
-  } else if (fields.project_id || fields.team_id || fields.reviewer_id || fields.status_id || (fields.assignee_id && fields.assignee_id !== req.user.id)) {
+  } else if (fields.project_id || fields.team_id || fields.reviewer_id || fields.status_id || fields.sprint_id || (fields.assignee_id && fields.assignee_id !== req.user.id)) {
     return res.status(400).json({ error: "Personal tasks can't have a team, project, reviewer or other assignee" });
   }
 
